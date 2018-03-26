@@ -6,7 +6,7 @@ import rospy
 import std_msgs.msg
 import sensor_msgs.msg
 from geometry_msgs.msg import Pose
-
+from std_srvs.srv import Trigger
 
 class take_scan(object):
 
@@ -50,6 +50,13 @@ class take_scan(object):
     
     def take_reading(self):
         print "take reading"
+        rospy.wait_for_service('/reset_force_sensor')
+        try:
+            reste_sensor = rospy.ServiceProxy('/reset_force_sensor', Trigger)
+            resp1 = reste_sensor()
+            print resp1
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
         cmd_str='p'
         self.cmd_pub.publish(cmd_str)
         rospy.sleep(10)
