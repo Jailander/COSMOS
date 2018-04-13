@@ -93,10 +93,10 @@ class DataGrid(object):
         
         model_names=[x.name for x in self.models]
         
-        print model_name
+        #print model_name
         
 #        print coord
-        print value
+        #print value
         
         if model_name not in model_names:
             a = KriggingData(self.shape, model_name)
@@ -211,7 +211,7 @@ class DataGrid(object):
             print "CAUTION!!!"
             print self.mean_deviation
             
-        print self.min_mean_deviation, self.max_mean_deviation
+        #print self.min_mean_deviation, self.max_mean_deviation
         #print self.mean_deviation
         print "-----"
 

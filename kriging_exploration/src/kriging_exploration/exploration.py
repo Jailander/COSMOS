@@ -68,6 +68,11 @@ class ExplorationPlan(object):
         #print self.targets
         self._get_plan(initial_waypoint)
         
+    def _get_wpt(self, wp):
+        for i in self.tmap.waypoints:
+            if i.name == wp:
+                return i
+
         
     def _get_wp(self, wp):
         for i in self.targets:
@@ -90,6 +95,11 @@ class ExplorationPlan(object):
             if i.name == wp_name:
                 found=True
                 return found
+
+        for i in self.targets:
+            if i.name == wp_name:
+                found=True
+                return found
         
         return found
     
@@ -100,16 +110,16 @@ class ExplorationPlan(object):
         
         found = False
         maxes1= np.copy(model_variance)
-        print maxes1
+        #print maxes1
         maxes = np.reshape(maxes1, -1)
-        print "-------"
+        #print "-------"
         maxes.sort()
         maxes = maxes[::-1]
-        print maxes
+        #print maxes
         maxind=0
         while not found:
             x ,y = np.where(model_variance==maxes[maxind])
-            print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
+            #print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
             for j in self.tmap.waypoints:
                 if (x[0],y[0]) == j.ind:
                     if not self._find_in_route(j.name):
@@ -119,8 +129,8 @@ class ExplorationPlan(object):
             maxind+=1
         print "Going To:"
         print to_append
-
-        self.route.append(to_append) 
+        return to_append
+        #self.route.append(to_append) 
 
 
     def add_limited_greedy_goal(self, model_variance, current_coord):
@@ -130,12 +140,12 @@ class ExplorationPlan(object):
         
         found = False
         maxes1= np.copy(model_variance)
-        print maxes1
+        #print maxes1
         maxes = np.reshape(maxes1, -1)
-        print "-------"
+        #print "-------"
         maxes.sort()
         maxes = maxes[::-1]
-        print maxes
+        #print maxes
         maxind=0
         while not found:
             x ,y = np.where(model_variance==maxes[maxind])
@@ -151,11 +161,110 @@ class ExplorationPlan(object):
         print "Going To:"
         print to_append
 
-        self.route.append(to_append)
+        return to_append
+        #self.route.append(to_append) 
 
 
 
-    def add_montecarlo_goal(self, model_variance, current_coord):
+    def adaptive_goals(self, model_variance, mode='greedy'):
+        ini_p=self.route[0].name
+        print("current node", ini_p)
+        self.targets=[]
+        orig_len=len(self.route)
+        for i in self.route:
+            self.targets.append(i)
+        print("clearing route")
+        self.route =[]
+        print("removing low variance goals")
+        var_average= np.mean(model_variance)
+        var_std= np.std(model_variance)
+        var_cut=var_average-(0.2*var_std)
+        #removed=0
+        to_pop=[]
+        for i in range(len(self.targets)):
+            print i, model_variance.shape, len(self.targets), self.targets[i].ind[0],self.targets[i].ind[1]
+            if model_variance[self.targets[i].ind[0]][self.targets[i].ind[1]]<var_cut:
+                to_pop.append(i)
+                #removed=removed+1
+
+        to_pop.reverse()
+        for i in to_pop:
+            self.targets.pop(i)
+
+        preadd=len(self.targets)
+        to_add=orig_len-preadd
+        for i in range(to_add+1):
+            #if mode=='greedy':
+            #self.targets.append(self.add_greedy_goal(model_variance))
+            #else:
+            self.targets.append(self.add_montecarlo_goal(model_variance))
+
+        print "Val Cut: ", var_cut, " av: ", var_average, " std ", var_std
+        print "TARGETS: ",len(self.targets), " Removed ", len(to_pop), " from ", orig_len, " there were ", preadd
+        
+        self._get_plan(ini_p)
+
+
+    def add_montecarlo_goal(self, model_variance):
+        print "getting Greedy..."
+        
+        found = False
+        maxes1= np.copy(model_variance)
+        #print maxes1
+        maxes = np.reshape(maxes1, -1)
+        #print "-------"
+        maxes.sort()
+        maxes = maxes[::-1]
+        #print maxes
+        maxind=0
+        
+        var_average= np.mean(model_variance)
+        #var_std= np.std(model_variance)
+        
+        var_cut=var_average#-(var_std)
+        varis=[]
+        wps=[]
+        
+        while not found:
+            x ,y = np.where(model_variance==maxes[maxind])
+            #print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
+            for j in self.tmap.waypoints:
+                if (x[0],y[0]) == j.ind:
+                    #dist = j.coord - current_coord
+                    if not self._find_in_route(j.name): #and np.abs(dist[0]) :
+                        wps.append(j)
+                        varis.append(maxes[maxind])
+            
+            if maxes[maxind] > var_cut:
+                maxind+=1                
+            else:
+                found=True
+                break
+        
+        suma = np.sum(varis)
+        scores = []
+        for i in varis:
+            kkl = np.ceil((i*1000)/suma)
+            scores.append(int(kkl))
+#        print "Going To:"
+        #print varis,
+        print scores, var_cut
+        mctargets=[]
+        
+        for i in range(len(varis)):
+            for j in range(scores[i]):
+                mctargets.append(wps[i])
+                
+        #print mctargets, len(mctargets)
+        np.random.shuffle(mctargets)
+        inds=np.random.randint(len(mctargets))
+        
+        return mctargets[inds]
+        #self.route.append(mctargets[inds])
+
+
+
+    def add_limited_montecarlo_goal(self, model_variance, current_coord):
         print "getting Greedy..."
         
         found = False
@@ -207,7 +316,9 @@ class ExplorationPlan(object):
         #print mctargets, len(mctargets)
         np.random.shuffle(mctargets)
         inds=np.random.randint(len(mctargets))
-        self.route.append(mctargets[inds])
+        
+        return mctargets[inds]
+        #self.route.append(mctargets[inds])
 
 
 
@@ -281,7 +392,7 @@ class ExplorationPlan(object):
     def _get_plan(self, initial_waypoint):
 #        self.route.append(self._get_wp(initial_waypoint))
 #        self.route_nodes.append(initial_waypoint)
-        
+        #print initial_waypoint
         groute, gdist = self._create_greedy_plan(initial_waypoint)
         rroute, rdist = self._create_random_plan(initial_waypoint)
         
@@ -304,22 +415,25 @@ class ExplorationPlan(object):
             self.route = troute
         
         print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist) + " Tom: " + str (tdist)
+        #print self.route
 
         
     
     def _create_greedy_plan(self, initial_waypoint):
         route=[]
-        route.append(self._get_wp(initial_waypoint))
+        route.append(self._get_wpt(initial_waypoint))
         
         local_targs = self.targets[:]
         
         print "-----------"
-        print route[-1]
+        #print route[-1]
         while len(local_targs) > 0:
             cn = route[-1]
             min_dist =10000.0
             min_ind = -1
             for i in range(0, len(local_targs)):
+                print local_targs[i]
+                print cn
                 dist, ang = local_targs[i].coord - cn.coord
                 if dist <= min_dist:
                    min_dist = dist
@@ -430,7 +544,7 @@ class ExplorationPlan(object):
     
     def _create_random_plan(self, initial_waypoint):
         route=[]
-        route.append(self._get_wp(initial_waypoint))
+        route.append(self._get_wpt(initial_waypoint))
         
         for i in self.targets:
             if i.name != initial_waypoint:

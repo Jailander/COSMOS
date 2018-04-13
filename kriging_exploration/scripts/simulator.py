@@ -322,6 +322,7 @@ class simulator(object):
         norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         cmap = cm.jet
         colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+        #print "N Origin data: ", len(self.grid.models[nm].orig_data)
 #
         for i in self.grid.models[nm].orig_data:
             cell = self.grid.cells[i.y][i.x]

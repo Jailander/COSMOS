@@ -116,11 +116,14 @@ class comparer(object):
 #                        label='Women')
         
         ax.set_xlabel('Layers')
-        ax.set_ylabel('Mean Errors')
-        ax.set_title('Errors by Layers')
+        ax.set_ylabel('Mean Values')
+        ax.set_title('Mean by Layers')
         ax.set_xticks(index + bar_width/2)
         ax.set_xticklabels(names)
         #ax.legend()
+        
+        for i in range(len(means)):
+            print stds[i]/means[i]
         
         fig.tight_layout()
         plt.savefig('comparison.png')
