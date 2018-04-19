@@ -174,6 +174,9 @@ class DataGrid(object):
                 self.area_splits.append(h)
 
         self.area_splits_coords = [x.centre for x in self.area_splits]
+        print "AREA SPLITS:", len(self.area_splits_coords)
+        print self.area_splits_coords
+        
 
 
 
@@ -224,6 +227,7 @@ class DataGrid(object):
     def create_grid(self, cell_size):
         self.cell_size = cell_size
         deasting, dnorthing = self._get_grid_corners()
+        print cell_size
         dnorthing = int(np.ceil(dnorthing/cell_size))
         deasting = int(np.ceil(deasting/cell_size))
         for i in range(0, dnorthing):

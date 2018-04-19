@@ -45,10 +45,27 @@ class KriggingData(object):
         datablah = np.asarray(datablah)
                        
         print "OK"
+        self.variogram_model='gaussian'
         #print datablah
         #OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='spherical', verbose=False, enable_plotting=False)
-        OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=False, enable_plotting=False)
+        #OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=True, enable_plotting=False)
+        OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model=self.variogram_model, verbose=True, enable_plotting=False)        
+        
         print "OK Done"
+        print OK.variogram_model_parameters
+        if self.variogram_model == 'linear':
+            self.Sill= OK.variogram_model_parameters[0]
+            self.Range= OK.variogram_model_parameters[1]
+            if self.Range <= 0.001:
+                self.Range = 0.001
+            #self.Nugget= OK.variogram_model_parameters[2]
+        else:
+            self.Sill= OK.variogram_model_parameters[0]
+            self.Range= OK.variogram_model_parameters[1]
+            self.Nugget= OK.variogram_model_parameters[2]
+            
+        self.sim_sill=np.mean(OK.semivariance[2:])
+        #OK.display_variogram_model()
 
         try:
             # Creates the kriged grid and the variance grid. Allows for kriging on a rectangular
@@ -77,6 +94,8 @@ class KriggingData(object):
         #self.min_var = np.min([np.nonzero(self.variance)])
         self.min_var = np.min(self.variance)
         self.max_var = np.max(self.variance)
+        self.avg_var = np.average(self.variance)
+
 
         self.min_val = np.min(self.output)
         self.max_val = np.max(self.output)

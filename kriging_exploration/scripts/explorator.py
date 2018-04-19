@@ -73,6 +73,7 @@ class Explorator(KrigingVisualiser):
     def __init__(self, lat_deg, lon_deg, zoom, size, args):
         self.targets = []
         self.results =[]
+        self.results2 =[]
         self.result_counter=0
         self.explodist=0
         self.running = True
@@ -171,7 +172,8 @@ class Explorator(KrigingVisualiser):
         self.n_goals=50   
         
         if explo_type=='area_split' or explo_type=='as_greedy':
-            self.grid._split_area(7,7)
+            #self.grid._split_area(7,7)
+            self.grid._split_area(3,3)
             sb=[]
             for i in self.grid.area_splits_coords:
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
@@ -274,6 +276,8 @@ class Explorator(KrigingVisualiser):
                 
                 resp = self.get_errors()
                 self.result_counter+=1
+                              
+                
                 d={}
                 d['step']=self.result_counter
                 d['id']=self.expid
@@ -297,19 +301,50 @@ class Explorator(KrigingVisualiser):
                 means=[]
                 maxs=[]
                 mins=[]
+
+                e={}
+                e['step']=self.result_counter
+                e['results']=[]
                 for i in range(self.n_models):
+                    f={}
                     means.append(float(np.mean(self.grid.models[i].variance)))
                     maxs.append(float(np.max(self.grid.models[i].variance)))
                     mins.append(float(np.min(self.grid.models[i].variance)))
-                                
+                    f['name']=self.grid.models[i].name
+                    f['params']={}
+                    f['params']['Model']= self.grid.models[i].variogram_model
+                    if self.grid.models[i].variogram_model != 'linear':
+                        f['params']['Sill']= float(self.grid.models[i].Sill)
+                        f['params']['Range']= float(self.grid.models[i].Range)
+                        f['params']['Nugget']= float(self.grid.models[i].Nugget)
+                    else:
+                        print "Sill: ", float(self.grid.models[i].Sill)
+                        print "Range: ", float(self.grid.models[i].Range)
+                        f['params']['Sill']= float(self.grid.models[i].sim_sill)
+                        f['params']['Nugget']= float(self.grid.models[i].Sill)
+                        if self.grid.models[i].Range <= 0.1:
+                            print "RANGE 0"
+                            f['params']['Range']= 0
+                        else:
+                            f['params']['Range']= (f['params']["Sill"]-f['params']["Nugget"])/float(self.grid.models[i].Range)
+                    f['results']={}
+                    f['results']['kriging_variance']=float(np.mean(self.grid.models[i].variance))
+                    e['results'].append(f)
+                    
+                
                 d['results']['models']={}
                 d['results']['models']['means']=means
                 d['results']['models']['maxs']=maxs
                 d['results']['models']['mins']=mins
 
 
+
+
+
+
                 rospy.sleep(0.1)
                 self.results.append(d)
+                self.results2.append(e)
                 if self.exploration_strategy == 'greedy':
                     nwp = len(self.explo_plan.route) + len(self.explo_plan.explored_wp)
                     print nwp, " nodes in plan"
@@ -352,9 +387,11 @@ class Explorator(KrigingVisualiser):
                 
             if len(self.explo_plan.explored_wp) > self.n_goals:
                 print "Done Exploring?"
-                self.exploring = 0
+                self.exploring = 4
             else:
                 self.exploring=4
+
+
 
     def scan_callback(self, msg):
         if msg.data == 'Reading':
@@ -831,8 +868,8 @@ class Explorator(KrigingVisualiser):
             
             nc=0
             for j in self.grid.area_splits:
-                print j.area_size
-                #self.limits_canvas.draw_coordinate(j.centre, 'crimson', size=3, thickness=2)
+                print j.area_size, j.centre
+                self.limits_canvas.draw_coordinate(j.centre, 'crimson', size=3, thickness=2)
                 for i in j.limit_lines:
                     #self.limits_canvas.draw_line(i, colours[nc], thickness=1)
                     self.limits_canvas.draw_line(i, 'black', thickness=1)
@@ -849,7 +886,7 @@ class Explorator(KrigingVisualiser):
             print self.get_errors()            
 
         elif k== ord('o'):
-            print self.results
+            #print self.results
             outfile = self.expid + '.yaml'
             #print self.data_out
             yml = yaml.safe_dump(self.results, default_flow_style=False)
@@ -857,7 +894,20 @@ class Explorator(KrigingVisualiser):
             s_output = str(yml)
             #print s_output
             fh.write(s_output)
-            fh.close
+            fh.close()
+
+
+            print self.results
+            outfile = self.expid + '-parameters.yaml'
+            #print self.data_out
+            yml = yaml.safe_dump(self.results2, default_flow_style=False)
+            fh = open(outfile, "w")
+            s_output = str(yml)
+            #print s_output
+            fh.write(s_output)
+            fh.close()
+
+
 
         elif k== ord('2'):
             self.draw_mean_out()
@@ -954,8 +1004,8 @@ if __name__ == '__main__':
     rospy.init_node('kriging_exploration')
     #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
     
-    Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
-    #Explorator(53.261576, -0.526648, 17, 640, args)  #Half cosmos field
+    #Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
+    Explorator(53.261576, -0.526648, 17, 640, args)  #Half cosmos field
     #Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
 
     

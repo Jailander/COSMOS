@@ -60,7 +60,7 @@ class MapPolyareas(object):
         self.make_lines()
         self.width, self.height = self._get_boundbox_corners()
         self.area_size = self._calculate_area(self.corners)
-        #self._get_poly_centroid()
+        self._get_poly_centroid()
         self._get_poly_centre()
         
     
@@ -77,7 +77,7 @@ class MapPolyareas(object):
         zone_letter = self.corners[0].zone_letter
 
         centreI = utm.to_latlon(xc, yc, zone_number, zone_letter=zone_letter)
-        self.centre = MapCoords(float(abs(centreI[0])),float(abs(centreI[1])))
+        self.centre = MapCoords(float(centreI[0]),float(centreI[1]))
         
         
 

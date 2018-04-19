@@ -79,16 +79,57 @@ class simulator(object):
 
         print "Loading Satellite Image"
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
-        self.grid = DataGrid('limits.coords', cell_size)
+#        self.grid = DataGrid('football-old.coords', cell_size)
+        self.grid = DataGrid('cosmos.coords', cell_size)
 
         #self.load_groundtruth('Iains2.yaml')
         #self.load_groundtruth('bottom_testing.yaml')
         #self.load_groundtruth('upper_testing.yaml')
-        self.load_groundtruth('testing-5cm-intervals.yaml')
+#        self.load_groundtruth('testing-5cm-intervals.yaml')
+#        self.load_groundtruth('football-corrected.yaml')        
+        self.load_groundtruth('cosmos-corrected.yaml')        
+        
         
         self.krieg_all_mmodels()
         self.grid.calculate_mean_grid()
         
+        mpar=[]
+                
+        for i in range(self.n_models):
+            ddd={}
+            print "---------------"
+            print "Layer: ", self.grid.models[i].name
+            print "Sill: ", float(self.grid.models[i].Sill)
+            print "Range: ", float(self.grid.models[i].Range)
+            print self.grid.models[i].variogram_model
+            if self.grid.models[i].variogram_model != 'linear':
+                print "Nugget: ", float(self.grid.models[i].Nugget)           
+                ddd["Layer"]= self.grid.models[i].name
+                ddd["Sill"]= float(self.grid.models[i].Sill)
+                ddd["Range"]= float(self.grid.models[i].Range)
+                ddd["Nugget"]= float(self.grid.models[i].Nugget)
+                ddd["model"]= self.grid.models[i].variogram_model
+                ddd["var"]= float(self.grid.models[i].avg_var)
+            else:
+                ddd["Layer"]= self.grid.models[i].name
+                ddd["Sill"]= float(self.grid.models[i].sim_sill)          
+                ddd["Nugget"]= float(self.grid.models[i].Sill)
+                ddd["Range"]= (ddd["Sill"]-ddd["Nugget"])/float(self.grid.models[i].Range)
+                ddd["model"]= self.grid.models[i].variogram_model
+                ddd["var"]= float(self.grid.models[i].avg_var)
+
+            mpar.append(ddd)
+            
+            
+        outfiled = 'cosmos-groundtruth-params-1m-spherical.yaml'
+        yml = yaml.safe_dump(mpar, default_flow_style=False)
+        fhd = open(outfiled, "w")
+        s_output = str(yml)
+        print s_output
+        fhd.write(s_output)
+        fhd.close()
+
+
         self.image = self.satellite.base_image.copy()
         while(self.running):
             cv2.imshow('simulator', self.image)
@@ -379,6 +420,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     rospy.init_node('kriging_simulator')
+    
+#    simulator(53.267213, -0.533420, 17, 640, args.cell_size)  #Football Field
 
     simulator(53.261576, -0.526648, 17, 640, args.cell_size)  #Half cosmos field
 #    simulator(53.261685, -0.525158, 17, 640, args.cell_size)  #Full cosmos field

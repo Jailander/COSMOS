@@ -347,9 +347,11 @@ class ExplorationPlan(object):
     def _get_ac_targets(self, topo_map, initial_waypoint, ac_coords):
         
         for i in ac_coords:
+            print "finding: ", i
             for j in topo_map.waypoints:
                 if i == j.ind:
                     self.targets.append(j)
+                    print "FOund!!: ", j
                     #break
                     
         found = False            
@@ -392,7 +394,8 @@ class ExplorationPlan(object):
     def _get_plan(self, initial_waypoint):
 #        self.route.append(self._get_wp(initial_waypoint))
 #        self.route_nodes.append(initial_waypoint)
-        #print initial_waypoint
+        print "---------"
+        print initial_waypoint
         groute, gdist = self._create_greedy_plan(initial_waypoint)
         rroute, rdist = self._create_random_plan(initial_waypoint)
         
@@ -426,7 +429,8 @@ class ExplorationPlan(object):
         local_targs = self.targets[:]
         
         print "-----------"
-        #print route[-1]
+        print route[-1]
+        print "+++++++++++"
         while len(local_targs) > 0:
             cn = route[-1]
             min_dist =10000.0
