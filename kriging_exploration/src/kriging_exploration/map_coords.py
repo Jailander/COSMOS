@@ -22,7 +22,8 @@ class MapCoords(object):
         deast = self.easting - other.easting
         dist = math.hypot(deast, dnorth)
         orient = math.atan2(dnorth, deast) * 180/math.pi
-        return dist, orient
+        #return dist, orient
+        return dist, orient#, deast, dnorth
 
 
     def __mod__(self, other):

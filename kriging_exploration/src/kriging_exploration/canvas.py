@@ -37,12 +37,15 @@ class ViewerCanvas(object):
         self.image = np.zeros(self.shape, dtype=np.uint8)
 
 
-    def draw_coordinate(self, coord, colour, size=6, thickness=2, alpha=128):
+    def draw_coordinate(self, coord, colour, size=6, thickness=2, alpha=128, shape='circle'):
         mx, my =self._coord2pix(coord)        
         b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
         b = b[::-1]
         b.append(alpha)
-        cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
+        if shape == 'rect':
+            cv2.rectangle(self.image, (int(mx)-size, int(my)-size), (int(mx)+size, int(my)+size), b, thickness)
+        else:
+            cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
 
 
     def draw_waypoints(self, waypoints, colour,thickness=2):
@@ -154,10 +157,11 @@ class ViewerCanvas(object):
         tsz=cv2.getTextSize(str(np.ceil(vmax)) + " Kpa", font, 0.6, 2)
         cv2.putText(self.image, str(np.ceil(vmax)) + " Kpa", (int(490)-tsz[0][0]-5, int(480)), font, 0.6, b, 2)
         
-        cv2.putText(self.image, title, (230,175), font, 0.8, (220, 220, 220,255), 2)
-    
+#        cv2.putText(self.image, title, (230,175), font, 0.8, (220, 220, 220,255), 2)
+        cv2.putText(self.image, title, (250,250), font, 0.8, (220, 220, 220,255), 2)    
     
     def put_text(self,text,colour=(230,230,230,255)):
         font = cv2.FONT_HERSHEY_SIMPLEX
+#        cv2.putText(self.image, text, (int(400), int(250)), font, 0.8, colour, 2)
         cv2.putText(self.image, text, (int(400), int(175)), font, 0.8, colour, 2)
         
