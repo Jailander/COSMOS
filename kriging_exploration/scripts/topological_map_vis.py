@@ -14,6 +14,8 @@ import argparse
 import matplotlib as mpl
 import matplotlib.cm as cm
 
+from sensor_msgs.msg import NavSatFix
+
 from kriging_exploration.map_coords import MapCoords
 
 from kriging_exploration.visualiser import KrigingVisualiser
@@ -44,6 +46,24 @@ def overlay_image_alpha(img, img_overlay):
 
 
 
+class topo_map_node(object):
+    def __init__(self, name, coord):
+        self.name = name
+        self.coord = coord
+
+
+    def __repr__(self):
+        a = dir(self)
+        b = []
+        s = ''
+        for i in a:
+            if not i.startswith('_'):
+                b.append(str(i))
+        for i in b:
+                s = s + str(i) + ': ' + str(self.__getattribute__(i)) + '\n'
+        return s
+
+
 class SimpleDataVisualiser(KrigingVisualiser):
 
     modes = {
@@ -58,6 +78,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
     def __init__(self, field_file, size, cell_size):
         self.running = True
+        self.topo_map=[]
         signal.signal(signal.SIGINT, self.signal_handler)
 
 
@@ -81,55 +102,109 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
 
-        self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.map_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)        
         
         self.create_map(self.centre, 30.0)
         self.draw_coords()
         
+        rospy.loginfo("Subscribing to GPS Data")
+        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
+        
+        
         while(self.running):
             self.refresh()
-            cv2.imshow('SimpleDataVisualiser', self.image)
+            cv2.imshow('SimpleDataVisualiser', self.show_image)
             k = cv2.waitKey(20) & 0xFF
 #            self._change_mode(k)
             if k == 27:
                 self.running = False
-            time.sleep(0.2)
+            time.sleep(0.02)
             
         cv2.destroyAllWindows()       
         sys.exit(0)
+
+
+    def gps_callback(self, data):
+        if not np.isnan(data.latitude):
+            gps_coord = MapCoords(data.latitude,data.longitude)
+            self.closest_node = self.get_closest_node(gps_coord)
+            self.gps_canvas.clear_image()
+            self.gps_canvas.draw_coordinate(self.closest_node.coord,'red',size=6, thickness=2, alpha=255)
+            self.gps_canvas.draw_coordinate(gps_coord,'white',size=2, thickness=2, alpha=255)
+
+
+
+    def get_closest_node(self, gps_coord):
+        dist, node = self.check_topo_map_dist(gps_coord)
+        print node.name, dist, 'E: ', node.coord.easting-gps_coord.easting, 'N: ', node.coord.northing-gps_coord.northing
+        return node
+
+    def check_topo_map_dist(self, coord):
+        mindist=10000
+        closest='none'
+        for i in self.topo_map:
+            dist, ori = coord-i.coord
+            if dist < mindist:
+                mindist=dist
+                closest=i
+                if mindist < 0.5:
+                    break
+        
+        return mindist, closest
+        
+
+    def create_cal_map(self, centre, degang):
+#        ang=math.radians(degang)        
+        self.calib_map=[]
+        name_index=0
+
+
+        # Calibration Points
+        for i in range(-120,121,120):
+            ang2=math.radians(degang+90.0)
+            dy=i*math.cos(ang2)
+            dx=i*math.sin(ang2)
+            new_coord = self.centre._get_rel_point(dy,dx)
+            
+            dist, clnode = self.check_topo_map_dist(new_coord)
+            if dist > 0.5:
+                name='C_'+str("%03d" %name_index)
+                name_index+=1
+                map_node = topo_map_node(name, new_coord)
+                self.calib_map.append(map_node)        
+                self.topo_map.append(map_node)
+            else:
+                print "node too close to: ", clnode.name
 
 
     def create_map(self, centre, degang):
         ang=math.radians(degang)
         self.lowr_map=[]
         self.highr_map=[]
-        self.calib_map=[]
         self.pin_map=[]
         self.ceh_map=[]
         
-        #Low res map
-        #East-West
-        for i in range(-90,91,30):
-            dy=i*math.sin(ang)
-            dx=i*math.cos(ang)
-            new_coord=centre._get_rel_point(dx,dy)
-            self.lowr_map.append(new_coord)
-            
-            #North - South
-            for j in range(-210,211,30):
-                ang2=math.radians(degang+90.0)
-                dy=j*math.cos(ang2)
-                dx=j*math.sin(ang2)
-                new_coord2=new_coord._get_rel_point(dy,dx)
-                self.lowr_map.append(new_coord2)
-                
+        self.create_cal_map(centre, degang)
+
+
         #High res map
+
+        name_index=0
         #East-West
         for i in range(-60,61,15):
             dy=i*math.sin(ang)
             dx=i*math.cos(ang)
             new_coord=centre._get_rel_point(dx,dy)
-            self.highr_map.append(new_coord)
+            dist, clnode = self.check_topo_map_dist(new_coord)
+            if dist > 0.5:
+                name='HR_'+str("%03d" %name_index)
+                name_index+=1
+                map_node = topo_map_node(name, new_coord)
+                self.highr_map.append(map_node)
+                self.topo_map.append(map_node)
+            else:
+                print "node too close to: ", clnode.name
             
             #North - South
             for j in range(-90,91,15):
@@ -137,15 +212,56 @@ class SimpleDataVisualiser(KrigingVisualiser):
                 dy=j*math.cos(ang2)
                 dx=j*math.sin(ang2)
                 new_coord2=new_coord._get_rel_point(dy,dx)
-                self.highr_map.append(new_coord2)
+                dist, clnode = self.check_topo_map_dist(new_coord2)
+                if dist > 0.5:
+                    name='HR_'+str("%03d" %name_index)
+                    name_index+=1
+                    map_node = topo_map_node(name, new_coord2)
+                    self.highr_map.append(map_node)
+                    self.topo_map.append(map_node)
+                else:
+                    print "node too close to: ", clnode.name                
+                
+      
 
-        # Calibration Points
-        for i in range(-120,121,120):
-            ang2=math.radians(degang+90.0)
-            dy=i*math.cos(ang2)
-            dx=i*math.sin(ang2)
-            new_coord2=centre._get_rel_point(dy,dx)
-            self.calib_map.append(new_coord2)
+        
+        #Low res map
+
+        name_index=0
+        #East-West
+        for i in range(-90,91,30):
+            dy=i*math.sin(ang)
+            dx=i*math.cos(ang)
+            new_coord=centre._get_rel_point(dx,dy)
+            dist, clnode = self.check_topo_map_dist(new_coord)
+            if dist > 0.5:
+                name='LR_'+str("%03d" %name_index)
+                name_index+=1
+                map_node = topo_map_node(name, new_coord)
+                self.lowr_map.append(map_node)
+                self.topo_map.append(map_node)
+            else:
+                print "node too close to: ", clnode.name
+       
+            
+            
+            #North - South
+            for j in range(-210,211,30):
+                ang2=math.radians(degang+90.0)
+                dy=j*math.cos(ang2)
+                dx=j*math.sin(ang2)
+                new_coord2=new_coord._get_rel_point(dy,dx)
+                dist, clnode = self.check_topo_map_dist(new_coord2)
+                if dist > 0.5:
+                    name='LR_'+str("%03d" %name_index)
+                    name_index+=1
+                    map_node = topo_map_node(name, new_coord2)
+                    self.lowr_map.append(map_node)
+                    self.topo_map.append(map_node)
+                else:
+                    print "node too close to: ", clnode.name                
+                
+
 
 
         # Pinboard points
@@ -187,13 +303,13 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
         # CEH points
         for i in self.calib_map:
-            self.ceh_map.append(i)
+            self.ceh_map.append(i.coord)
             for j in range(0,360,60):
                 for h in [2,5,25,75]:
                     ang2=math.radians(degang+j+90)
                     dy=h*math.cos(ang2)
                     dx=h*math.sin(ang2)
-                    new_coord2=i._get_rel_point(dy,dx)
+                    new_coord2=i.coord._get_rel_point(dy,dx)
                     self.ceh_map.append(new_coord2)
         
 
@@ -201,35 +317,37 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
     def draw_coords(self):
+        for i in self.calib_map:  
+            print i
+            self.map_canvas.draw_coordinate(i.coord,'red',size=5, thickness=1, alpha=255)
+
         for i in self.lowr_map:
-            self.gps_canvas.draw_coordinate(i,'white',size=5, thickness=1, alpha=255)
+            self.map_canvas.draw_coordinate(i.coord,'white',size=5, thickness=1, alpha=255)
 
         for i in self.highr_map:
-            self.gps_canvas.draw_coordinate(i,'yellow',size=5, thickness=1, alpha=255)#,shape='rect')
+            self.map_canvas.draw_coordinate(i.coord,'yellow',size=5, thickness=1, alpha=255)#,shape='rect')
 
-        for i in self.calib_map:  
-            self.gps_canvas.draw_coordinate(i,'red',size=5, thickness=1, alpha=255)
         
         for i in self.pin_map:  
-            self.gps_canvas.draw_coordinate(i,'blue',size=2, thickness=2, alpha=255, shape='rect')
+            self.map_canvas.draw_coordinate(i,'blue',size=2, thickness=2, alpha=255, shape='rect')
         
         for i in self.ceh_map:  
-            self.gps_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
+            self.map_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
+
+        print len(self.topo_map)
+#        for i in self.topo_map:
+#            self.map_canvas.draw_coordinate(i.coord,'white',size=2, thickness=1, alpha=255)#, shape='rect')
             
-        
-#        colours=['red','blue','green','magenta','cyan','yellow']
-#        cind=0
-#        for i in self.coords:
-#            self.dgps_coord = MapCoords(i[0],i[1])
-#            self.gps_canvas.draw_coordinate(self.dgps_coord,colours[cind],size=4, thickness=2, alpha=255)
-#            cind+=1
-#            if cind>=len(colours):
-#                cind=0
+        self.redraw()
+
+    def redraw(self):
+        #self.image = cv2.addWeighted(self.gps_canvas.image, 0.3, self.image, 1.0, 0)
+        self.image = overlay_image_alpha(self.image,self.map_canvas.image)
 
 
     def refresh(self):
-        #self.image = cv2.addWeighted(self.gps_canvas.image, 0.3, self.image, 1.0, 0)
-        self.image = overlay_image_alpha(self.image,self.gps_canvas.image)
+        #self.show_image = cv2.addWeighted(self.gps_canvas.image, 0.3, self.image, 1.0, 0)
+        self.show_image = overlay_image_alpha( self.image, self.gps_canvas.image)
 
     def signal_handler(self, signal, frame):
         cv2.destroyAllWindows()
@@ -243,7 +361,8 @@ if __name__ == '__main__':
     parser.add_argument("--cell_size", type=int, default=10,
                         help="field definition file")
     args = parser.parse_args()
-    
+
+    rospy.init_node('topomap_vis')
     SimpleDataVisualiser(args.field_file, 640, args.cell_size)
 #    SimpleDataVisualiser(53.261685, -0.525158, 17, 640, args.cell_size)
 
