@@ -80,7 +80,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.running = True
         self.topo_map=[]
         signal.signal(signal.SIGINT, self.signal_handler)
-
+        map_angle=30.0
 
         with open(field_file, 'r') as f:
             a = yaml.load(f)
@@ -105,8 +105,10 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.map_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)        
         
-        self.create_map(self.centre, 30.0)
-        self.draw_coords()
+        
+        
+        self.create_map(self.centre, map_angle)
+        self.draw_coords(self.centre,map_angle)
         
         rospy.loginfo("Subscribing to GPS Data")
         rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
@@ -154,6 +156,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
         return mindist, closest
         
 
+
+    # Function to add calibration points to map
     def create_cal_map(self, centre, degang):
 #        ang=math.radians(degang)        
         self.calib_map=[]
@@ -161,8 +165,9 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
         # Calibration Points
-        for i in range(-120,121,120):
-            ang2=math.radians(degang+90.0)
+        for i in range(-60,61,120):
+#            ang2=math.radians(degang+90.0)
+            ang2=math.radians(degang)
             dy=i*math.cos(ang2)
             dx=i*math.sin(ang2)
             new_coord = self.centre._get_rel_point(dy,dx)
@@ -178,16 +183,9 @@ class SimpleDataVisualiser(KrigingVisualiser):
                 print "node too close to: ", clnode.name
 
 
-    def create_map(self, centre, degang):
+    # Function to add high res points to map
+    def create_hr_map(self, centre, degang):
         ang=math.radians(degang)
-        self.lowr_map=[]
-        self.highr_map=[]
-        self.pin_map=[]
-        self.ceh_map=[]
-        
-        self.create_cal_map(centre, degang)
-
-
         #High res map
 
         name_index=0
@@ -221,10 +219,11 @@ class SimpleDataVisualiser(KrigingVisualiser):
                     self.topo_map.append(map_node)
                 else:
                     print "node too close to: ", clnode.name                
-                
-      
 
-        
+
+    # Function to add low res points to map
+    def create_lr_map(self, centre, degang):
+        ang=math.radians(degang)
         #Low res map
 
         name_index=0
@@ -243,10 +242,9 @@ class SimpleDataVisualiser(KrigingVisualiser):
             else:
                 print "node too close to: ", clnode.name
        
-            
-            
+     
             #North - South
-            for j in range(-210,211,30):
+            for j in range(-150,151,30):
                 ang2=math.radians(degang+90.0)
                 dy=j*math.cos(ang2)
                 dx=j*math.sin(ang2)
@@ -259,66 +257,75 @@ class SimpleDataVisualiser(KrigingVisualiser):
                     self.lowr_map.append(map_node)
                     self.topo_map.append(map_node)
                 else:
-                    print "node too close to: ", clnode.name                
-                
+                    print "node too close to: ", clnode.name
 
 
-
-        # Pinboard points
-        # North - South Line
-        for i in range(-210,211,30):
-            ang2=math.radians(degang+90.0)
-            dy=i*math.cos(ang2)
-            dx=i*math.sin(ang2)
-            new_coord2=centre._get_rel_point(dy,dx)
-            self.pin_map.append(new_coord2)
-
-
-        # Southern East - West Line        
-        ang2=math.radians(degang+90.0)
-        dy=-120*math.cos(ang2)
-        dx=-120*math.sin(ang2)
-        new_coord=centre._get_rel_point(dy,dx)
-
-        for j in range(-90,91,30):
-            ang2=math.radians(degang)
-            dy=j*math.cos(ang2)
-            dx=j*math.sin(ang2)
-            new_coord2=new_coord._get_rel_point(dy,dx)
-            self.pin_map.append(new_coord2)
+    def create_map(self, centre, degang):
+#       ang=math.radians(degang)
+       self.lowr_map=[]
+       self.highr_map=[]
+       self.pin_map=[]
+       self.ceh_map=[]
         
-        # Northern East - West Line
-        ang2=math.radians(degang+90.0)
-        dy=120*math.cos(ang2)
-        dx=120*math.sin(ang2)
-        new_coord=centre._get_rel_point(dy,dx)
-
-        for j in range(-90,91,30):
-            ang2=math.radians(degang)
-            dy=j*math.cos(ang2)
-            dx=j*math.sin(ang2)
-            new_coord2=new_coord._get_rel_point(dy,dx)
-            self.pin_map.append(new_coord2)
+       self.create_cal_map(centre, degang)
+       self.create_hr_map(centre, degang)
+       self.create_lr_map(centre, degang)
 
 
-        # CEH points
-        for i in self.calib_map:
-            self.ceh_map.append(i.coord)
-            for j in range(0,360,60):
-                for h in [2,5,25,75]:
-                    ang2=math.radians(degang+j+90)
-                    dy=h*math.cos(ang2)
-                    dx=h*math.sin(ang2)
-                    new_coord2=i.coord._get_rel_point(dy,dx)
-                    self.ceh_map.append(new_coord2)
+       # Pinboard points
+       # North - South Line
+       for i in range(-150,151,30):
+           ang2=math.radians(degang+90.0)
+           dy=i*math.cos(ang2)
+           dx=i*math.sin(ang2)
+           new_coord2=centre._get_rel_point(dy,dx)
+           self.pin_map.append(new_coord2)
+
+
+       # Southern East - West Line        
+       ang2=math.radians(degang+90.0)
+       dy=-120*math.cos(ang2)
+       dx=-120*math.sin(ang2)
+       new_coord=centre._get_rel_point(dy,dx)
+
+       for j in range(-90,91,30):
+           ang2=math.radians(degang)
+           dy=j*math.cos(ang2)
+           dx=j*math.sin(ang2)
+           new_coord2=new_coord._get_rel_point(dy,dx)
+           self.pin_map.append(new_coord2)
+        
+       # Northern East - West Line
+       ang2=math.radians(degang+90.0)
+       dy=120*math.cos(ang2)
+       dx=120*math.sin(ang2)
+       new_coord=centre._get_rel_point(dy,dx)
+
+       for j in range(-90,91,30):
+           ang2=math.radians(degang)
+           dy=j*math.cos(ang2)
+           dx=j*math.sin(ang2)
+           new_coord2=new_coord._get_rel_point(dy,dx)
+           self.pin_map.append(new_coord2)
+
+
+       # CEH points
+       for i in self.calib_map:
+           self.ceh_map.append(i.coord)
+           for j in range(0,360,60):
+               for h in [2,3,5]:
+                   ang2=math.radians(degang+j+90)
+                   dy=h*math.cos(ang2)
+                   dx=h*math.sin(ang2)
+                   new_coord2=i.coord._get_rel_point(dy,dx)
+                   self.ceh_map.append(new_coord2)
         
 
 #2 5 25 75
 
 
-    def draw_coords(self):
+    def draw_coords(self, centre, degang):
         for i in self.calib_map:  
-            print i
             self.map_canvas.draw_coordinate(i.coord,'red',size=5, thickness=1, alpha=255)
 
         for i in self.lowr_map:
@@ -334,7 +341,33 @@ class SimpleDataVisualiser(KrigingVisualiser):
         for i in self.ceh_map:  
             self.map_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
 
+        line=[]
+        
+        ang=math.radians(degang)
+        dy=55*math.cos(ang)
+        dx=55*math.sin(ang)
+        irr_centre=centre._get_rel_point(dy,dx)
+
+
+        ang2=math.radians(degang+90.0)
+        dy=220*math.cos(ang2)
+        dx=220*math.sin(ang2)
+        new_coord=irr_centre._get_rel_point(dy,dx)
+        line.append(new_coord)
+
+        dy=-220*math.cos(ang2)
+        dx=-220*math.sin(ang2)
+        new_coord2=irr_centre._get_rel_point(dy,dx)
+        line.append(new_coord2)
+
+
+        self.map_canvas.draw_line(line, 'magenta')
+#        self.map_canvas.draw_coordinate(new_coord, 'magenta',size=5, thickness=3, alpha=255)
+#        self.map_canvas.draw_coordinate(new_coord2, 'magenta',size=5, thickness=3, alpha=255)
+
         print len(self.topo_map)
+
+
 #        for i in self.topo_map:
 #            self.map_canvas.draw_coordinate(i.coord,'white',size=2, thickness=1, alpha=255)#, shape='rect')
             
