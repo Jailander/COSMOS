@@ -14,6 +14,8 @@ import argparse
 import matplotlib as mpl
 import matplotlib.cm as cm
 
+import matplotlib.pyplot as plt
+
 from sensor_msgs.msg import NavSatFix
 
 from kriging_exploration.map_coords import MapCoords
@@ -75,6 +77,16 @@ class SimpleDataVisualiser(KrigingVisualiser):
             [53.13917, 0.004], [53.13917, 0.00394], [53.13919, 0.00393], 
             [53.13919, 0.00391], [53.13916, 0.00383], [53.13893, 0.00324], 
             [53.1389, 0.00343], [53.1391, 0.00462], [53.13907, 0.00419], [53.13701, 0.00499]]
+    
+    excluded=['HR_001','HR_003','HR_005','HR_006','HR_008','HR_010',
+              'HR_012','HR_013','HR_014','HR_015','HR_016','HR_017','HR_018','HR_019','HR_020','HR_021','HR_022','HR_023','HR_024',
+              'HR_027','HR_029','HR_031','HR_032','HR_034','HR_036',
+              'HR_038','HR_039','HR_040','HR_041','HR_042','HR_043','HR_044','HR_045','HR_046','HR_047','HR_048','HR_049','HR_050',
+              'HR_053','HR_055','HR_057','HR_058','HR_060','HR_062',
+              'HR_064','HR_065','HR_066','HR_067','HR_068','HR_069','HR_070','HR_071','HR_072','HR_073','HR_074','HR_075','HR_076',
+              'HR_079','HR_081','HR_083','HR_084','HR_086','HR_088',
+              'HR_090','HR_091','HR_092','HR_093','HR_094','HR_095','HR_096','HR_097','HR_098','HR_099','HR_100','HR_101','HR_102',
+              'HR_104','HR_106','HR_108','HR_109','HR_111','HR_113']
 
     def __init__(self, field_file, size, cell_size):
         self.running = True
@@ -94,7 +106,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         super(SimpleDataVisualiser, self).__init__(lat_deg, lon_deg, zoom, size)
 
         cv2.namedWindow('SimpleDataVisualiser')
-
+        cv2.setMouseCallback('SimpleDataVisualiser', self.click_callback)
 
 #        self.grid = DataGrid(a['field']['limits_file'], 10)
 #        self.grid2 = DataGrid(a['field']['limits_file'], 10)
@@ -111,7 +123,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.draw_coords(self.centre,map_angle)
         
         rospy.loginfo("Subscribing to GPS Data")
-        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
         
         
         while(self.running):
@@ -127,6 +139,15 @@ class SimpleDataVisualiser(KrigingVisualiser):
         sys.exit(0)
 
 
+    def click_callback(self, event, x, y, flags, param):
+        
+        if event == cv2.EVENT_LBUTTONDOWN:
+            click_coord = self.satellite._pix2coord(x,y)
+            closest_click = self.get_closest_node(click_coord)
+            print "Closest CLICK: ", closest_click
+
+
+
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
             gps_coord = MapCoords(data.latitude,data.longitude)
@@ -139,7 +160,10 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
     def get_closest_node(self, gps_coord):
         dist, node = self.check_topo_map_dist(gps_coord)
-        print node.name, dist, 'E: ', node.coord.easting-gps_coord.easting, 'N: ', node.coord.northing-gps_coord.northing
+        dd=round(dist,2)
+        de=round(node.coord.easting-gps_coord.easting,2)
+        dn=round(node.coord.northing-gps_coord.northing,2)
+        print node.name, dd, 'E: ', de, 'N: ', dn 
         return node
 
     def check_topo_map_dist(self, coord):
@@ -266,7 +290,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
        self.highr_map=[]
        self.pin_map=[]
        self.ceh_map=[]
-        
+       self.final_map=[]
+       
        self.create_cal_map(centre, degang)
        self.create_hr_map(centre, degang)
        self.create_lr_map(centre, degang)
@@ -319,33 +344,43 @@ class SimpleDataVisualiser(KrigingVisualiser):
                    dx=h*math.sin(ang2)
                    new_coord2=i.coord._get_rel_point(dy,dx)
                    self.ceh_map.append(new_coord2)
+       
+       
+       for i in self.topo_map:
+           if i.name not in self.excluded:
+               self.final_map.append(i)
+        
+        
         
 
 #2 5 25 75
 
 
     def draw_coords(self, centre, degang):
-        for i in self.calib_map:  
-            self.map_canvas.draw_coordinate(i.coord,'red',size=5, thickness=1, alpha=255)
+#        for i in self.calib_map:  
+#            self.map_canvas.draw_coordinate(i.coord,'red',size=5, thickness=1, alpha=255)
+#
+#        for i in self.lowr_map:
+#            self.map_canvas.draw_coordinate(i.coord,'white',size=5, thickness=1, alpha=255)
+#
+#        for i in self.highr_map:
+#            self.map_canvas.draw_coordinate(i.coord,'yellow',size=5, thickness=1, alpha=255)#,shape='rect')
+#
+#        
+#        for i in self.pin_map:  
+#            self.map_canvas.draw_coordinate(i,'blue',size=2, thickness=2, alpha=255, shape='rect')
+#        
+#        for i in self.ceh_map:  
+#            self.map_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
 
-        for i in self.lowr_map:
+        for i in self.final_map:
             self.map_canvas.draw_coordinate(i.coord,'white',size=5, thickness=1, alpha=255)
-
-        for i in self.highr_map:
-            self.map_canvas.draw_coordinate(i.coord,'yellow',size=5, thickness=1, alpha=255)#,shape='rect')
-
-        
-        for i in self.pin_map:  
-            self.map_canvas.draw_coordinate(i,'blue',size=2, thickness=2, alpha=255, shape='rect')
-        
-        for i in self.ceh_map:  
-            self.map_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
 
         line=[]
         
         ang=math.radians(degang)
-        dy=55*math.cos(ang)
-        dx=55*math.sin(ang)
+        dy=-22.5*math.cos(ang)
+        dx=-22.5*math.sin(ang)
         irr_centre=centre._get_rel_point(dy,dx)
 
 
@@ -362,15 +397,68 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
         self.map_canvas.draw_line(line, 'magenta')
-#        self.map_canvas.draw_coordinate(new_coord, 'magenta',size=5, thickness=3, alpha=255)
-#        self.map_canvas.draw_coordinate(new_coord2, 'magenta',size=5, thickness=3, alpha=255)
+        
+        line =[]
+        ang=math.radians(degang)
+        dy=-77.5*math.cos(ang)
+        dx=-77.5*math.sin(ang)
+        irr_centre=centre._get_rel_point(dy,dx)
 
+
+        ang2=math.radians(degang+90.0)
+        dy=220*math.cos(ang2)
+        dx=220*math.sin(ang2)
+        new_coord=irr_centre._get_rel_point(dy,dx)
+        line.append(new_coord)
+
+        dy=-220*math.cos(ang2)
+        dx=-220*math.sin(ang2)
+        new_coord2=irr_centre._get_rel_point(dy,dx)
+        line.append(new_coord2)
+
+
+        self.map_canvas.draw_line(line, 'magenta')
         print len(self.topo_map)
 
 
-#        for i in self.topo_map:
-#            self.map_canvas.draw_coordinate(i.coord,'white',size=2, thickness=1, alpha=255)#, shape='rect')
-            
+        labels=[]
+        pxs=[]
+        pys=[]
+        filelines=[]
+        filelines.append('Name; lat; lon')
+        for i in self.final_map:
+#            self.map_canvas.draw_coordinate(i.coord,'white',size=2, thickness=1, alpha=255)
+            px, py = self.map_canvas._coord2pix(i.coord)
+            labels.append(i.name)
+            pxs.append(px)
+            pys.append(640-py)
+            #print i.name, px, py, i.coord
+            node_str= i.name + '; ' + str(i.coord.lat) + '; ' + str(i.coord.lon)
+            filelines.append(node_str)
+        
+        print min(pxs), max(pxs)
+        print min(pys), max(pys)
+        
+        for j in filelines:
+            print j
+        
+        
+
+        plt.subplots_adjust(bottom = 0.1)
+        plt.scatter(pxs, pys, marker='o', c='blue', s= 100)
+        
+        for lab, x, y in zip(labels, pxs, pys):
+            plt.annotate(lab, xy=(x, y), xytext=(-25, -20), textcoords='offset points')
+            #, ha='right', va='bottom',
+            #    bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5))
+                #,arrowprops=dict(arrowstyle = '->', connectionstyle='arc3,rad=0'))
+        
+        #plt.show()
+
+        
+        
+        
+        
         self.redraw()
 
     def redraw(self):
