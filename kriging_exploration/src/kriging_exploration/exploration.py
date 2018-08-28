@@ -416,6 +416,7 @@ class ExplorationPlan(object):
         
         if tdist<dist:
             self.route = troute
+                   
         
         print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist) + " Tom: " + str (tdist)
         #print self.route
@@ -534,7 +535,7 @@ class ExplorationPlan(object):
             print "Service call failed: %s"%e
 
         plt.plot(resp1.x, resp1.y, '-o')
-        plt.savefig('poo.png')
+        plt.savefig('tsp-opt.png')
         
         #print "Remember initial wP: ", initial_waypoint
         for i in range(len(resp1.x)):
@@ -543,6 +544,19 @@ class ExplorationPlan(object):
                     route.append(j)
                     #print j.name
                     break
+
+
+#        random.shuffle(route)
+#        tx=[x.ind[0] for x in route]
+#        ty=[x.ind[1] for x in route]
+#
+#        plt.cla()
+#        plt.plot(tx, ty, '-o')
+#        plt.savefig('tsp-rand.png')
+
+        #xnames = [x.name for x in self.explo_plan.route]
+
+
         return route, self.get_route_dist(route)
         
     

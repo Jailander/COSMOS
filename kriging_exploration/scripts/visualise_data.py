@@ -44,7 +44,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
 #        self.grid = DataGrid('limits.coords', cell_size)
 #        
 #        self.image = self.satellite.base_image.copy()
-#        
+
 #        
         while(self.running):
             cv2.imshow('SimpleDataVisualiser', self.image)

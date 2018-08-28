@@ -45,7 +45,8 @@ class KriggingData(object):
         datablah = np.asarray(datablah)
                        
         print "OK"
-        self.variogram_model='gaussian'
+        self.variogram_model='linear'
+        #self.variogram_model='gaussian'
         #print datablah
         #OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='spherical', verbose=False, enable_plotting=False)
         #OK = OrdinaryKriging(datablah[:, 0], datablah[:, 1], datablah[:, 2], variogram_model='linear', verbose=True, enable_plotting=False)
