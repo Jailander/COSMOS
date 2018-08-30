@@ -33,15 +33,22 @@ class ViewerCanvas(object):
         deast, dnorth = self._coord2pix(point)
         return deast, dnorth
 
+    def _get_colour_from_name(self, colour, alpha):
+        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
+        b = b[::-1]
+        b.append(alpha)
+        return b
+
     def clear_image(self):
         self.image = np.zeros(self.shape, dtype=np.uint8)
 
 
     def draw_coordinate(self, coord, colour, size=6, thickness=2, alpha=128, shape='circle'):
-        mx, my =self._coord2pix(coord)        
-        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
-        b = b[::-1]
-        b.append(alpha)
+        mx, my =self._coord2pix(coord)
+        b = self._get_colour_from_name(colour,alpha)
+#        b = [int(255*x) for x in mcolors.hex2color(mcolors.cnames[colour])]
+#        b = b[::-1]
+#        b.append(alpha)
         if shape == 'rect':
             cv2.rectangle(self.image, (int(mx)-size, int(my)-size), (int(mx)+size, int(my)+size), b, thickness)
         else:
@@ -94,6 +101,8 @@ class ViewerCanvas(object):
         
 
     def draw_list_of_coords(self, list_of_coords, colour, size=6, thickness=2):
+        if isinstance(colour,str):
+           colour = self._get_colour_from_name(colour,128) 
         for i in list_of_coords:
             mx, my = self._coord2pix(i)
             cv2.circle(self.image, (int(mx), int(my)), size, colour, thickness)

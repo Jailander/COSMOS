@@ -69,7 +69,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.image = self.satellite.base_image.copy()
         self.map_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 #
-        self.drawing_grid(self.centre, 15.5)
+        self.get_corners(-15.5)
+        self.drawing_grid(self.centre, -15.5)
 
         while(self.running):
             cv2.imshow('SimpleDataVisualiser', self.image)
@@ -80,12 +81,42 @@ class SimpleDataVisualiser(KrigingVisualiser):
         cv2.destroyAllWindows()       
         sys.exit(0)
 
+    def get_corners(self, degang):
+        self.corners=[]
+        angie=math.pi/4
+        ang=math.radians(degang)
+        radi=37.50/math.cos(angie)
+        
+        dx=-radi*math.cos(ang+angie)
+        dy=-radi*math.sin(ang+angie)
+        x0=self.centre._get_rel_point(dy,dx)
+#        self.map_canvas.draw_coordinate(x0,'white', alpha=200)
+        
+        dx=-radi*math.cos(ang-angie)
+        dy=-radi*math.sin(ang-angie)
+        x1=self.centre._get_rel_point(dy,dx)
+#        self.map_canvas.draw_coordinate(x1,'black', alpha=200)        
+        
+        dx=radi*math.cos(ang+angie)
+        dy=radi*math.sin(ang+angie)
+        x2=self.centre._get_rel_point(dy,dx)
+#        self.map_canvas.draw_coordinate(x2,'black', alpha=200)
+
+        dx=radi*math.cos(ang-angie)
+        dy=radi*math.sin(ang-angie)
+        x3=self.centre._get_rel_point(dy,dx)
+#        self.map_canvas.draw_coordinate(x3,'black', alpha=200)
+        self.corners.append(x0)
+        self.corners.append(x1)
+        self.corners.append(x2)
+        self.corners.append(x3)        
+
 
     def drawing_grid(self, centre, degang):
         self.map_canvas.draw_coordinate(self.centre,'black',size=5, thickness=1, alpha=255)
 
         #zero lines
-        ang=math.radians(-degang)
+        ang=math.radians(degang)
         line=[]
         dx=-30*math.cos(ang)
         dy=-30.0*math.sin(ang)
@@ -98,7 +129,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.map_canvas.draw_line(line, 'red')
 
 
-        ang=math.radians(90-degang)
+        ang=math.radians(90+degang)
         lineb=[]
         dx=-30*math.cos(ang)
         dy=-30.0*math.sin(ang)
@@ -111,7 +142,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.map_canvas.draw_line(lineb, 'red')                
         
         
-        ang=math.radians(90-degang)
+        ang=math.radians(90+degang)
         line=[]
         dx=-30*math.cos(ang)
         dy=-30.0*math.sin(ang)
@@ -122,34 +153,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
         line.append(x0)        
         line.append(x1)
         self.map_canvas.draw_line(line, 'red')        
-        
-        #corners        
-        
-        corners=[]
-        angie=math.pi/4
-        ang=math.radians(-degang)
-        radi=37.50/math.cos(angie)
-        
-        dx=-radi*math.cos(ang+angie)
-        dy=-radi*math.sin(ang+angie)
-        x0=centre._get_rel_point(dy,dx)
-        self.map_canvas.draw_coordinate(x0,'white', alpha=200)
-        
-        dx=-radi*math.cos(ang-angie)
-        dy=-radi*math.sin(ang-angie)
-        x1=centre._get_rel_point(dy,dx)
-        self.map_canvas.draw_coordinate(x1,'black', alpha=200)        
-        
-        dx=radi*math.cos(ang+angie)
-        dy=radi*math.sin(ang+angie)
-        x2=centre._get_rel_point(dy,dx)
-        self.map_canvas.draw_coordinate(x2,'black', alpha=200)
-
-        dx=radi*math.cos(ang-angie)
-        dy=radi*math.sin(ang-angie)
-        x1=centre._get_rel_point(dy,dx)
-        self.map_canvas.draw_coordinate(x1,'black', alpha=200)
-        
+        self.map_canvas.draw_list_of_coords(self.corners, 'black', size=6, thickness=2)
+       
         self.redraw()
 
     def redraw(self):
