@@ -9,7 +9,7 @@ import serial
 class SeptentrioReader(object):
 
     def __init__(self):
-        self.truenorth_cal=0.0
+        self.truenorth_cal=90.0
         ser = serial.Serial('/dev/ttyACM0', 115000)
         self.pub = rospy.Publisher('/septentrio/string', String, queue_size=10)
         self.ang_pub = rospy.Publisher('/septentrio/heading', Float32, queue_size=0)
