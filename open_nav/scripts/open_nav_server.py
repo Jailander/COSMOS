@@ -23,8 +23,8 @@ class opennavserver(object):
         self._action_name = name
         self.first_fix = True
         self.teleport = teleport
-        self.maxxvel = 4.0
-        self.maxangvel = 1.0
+        self.maxxvel = 0.6
+        self.maxangvel = 0.1
         
         rospy.on_shutdown(self._shutdown)
         
@@ -34,7 +34,7 @@ class opennavserver(object):
         self._as = actionlib.SimpleActionServer(self._action_name, open_nav.msg.OpenNavAction, execute_cb = self.executeCallback, auto_start = False)
         self._as.register_preempt_callback(self.preemptCallback)
 
-        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
 
         rospy.loginfo(" ...starting")
         self._as.start()
@@ -141,4 +141,4 @@ class opennavserver(object):
 
 if __name__ == '__main__':
     rospy.init_node('open_nav')
-    server = opennavserver(rospy.get_name(), teleport=True)
+    server = opennavserver(rospy.get_name(), teleport=False)

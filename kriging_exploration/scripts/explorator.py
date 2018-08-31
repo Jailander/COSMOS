@@ -99,7 +99,7 @@ class Explorator(KrigingVisualiser):
         
             
         self.navigating = False
-        self.pause_exp = False
+        self.pause_exp = True
         self.exploring = 0
         self.n_inputs = 0
         
@@ -139,7 +139,7 @@ class Explorator(KrigingVisualiser):
 
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
-        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
         rospy.Subscriber('/penetrometer_scan', std_msgs.msg.String, self.scan_callback)
         self.req_data_pub = rospy.Publisher('/request_scan', std_msgs.msg.String, latch=False, queue_size=1)
 

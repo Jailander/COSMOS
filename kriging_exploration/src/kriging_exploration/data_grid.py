@@ -40,7 +40,7 @@ def PolyArea(x,y):
     return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
 class DataGrid(object):
-    def __init__(self, limits_file, cell_size):
+    def __init__(self, limits_file, cell_size, limit_list=[]):
         self.limits=[]
         self.limit_lines=[] # Limit side lines
         self.area_splits=[]
@@ -51,7 +51,11 @@ class DataGrid(object):
         self.corners=[]
         self.cells=[]       #coordinates of the center of each cell
 
-        self._load_limits(limits_file)
+        if limits_file:
+            self._load_limits(limits_file)
+        else:
+            self.set_limits(limit_list)
+            
         self.create_grid(cell_size)
 
         self.models=[]
