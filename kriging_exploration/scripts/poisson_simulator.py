@@ -9,7 +9,7 @@ import kriging_exploration.canvas
 from kriging_exploration.map_coords import MapCoords
 from kriging_exploration.canvas import ViewerCanvas
 from kriging_exploration.visualiser import KrigingVisualiser
-from kriging_exploration.data_grid import DataGrid
+
 
 
 import numpy as np
@@ -40,8 +40,6 @@ from sensor_msgs.msg import NavSatFix
 def load_field_defs(filename):
     with open(filename, 'r') as f:
         a = yaml.load(f)
-    #print a
-    #print a['field']['limits']
     return a
 
 class PoissonSimulation(KrigingVisualiser):
@@ -65,14 +63,12 @@ class PoissonSimulation(KrigingVisualiser):
             limits.append(b)
 
         cv2.namedWindow('SimpleDataVisualiser')
-        self.grid = DataGrid(None, cell_size, limit_list=limits)
-#
-        
         self.image = self.satellite.base_image.copy()
-        self.grid_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
-        self.grid_canvas.draw_grid(self.grid.cells, cell_size, (72,72,72,128), thickness=1)
-        self.grid_canvas.draw_polygon(self.grid.limits, (0,0,255,128), thickness=2)
+        self.create_grid(cell_size, limits)
+        self.draw_grid()
+
+
 
         self.load_groundtruth('airfield-sim.data')
         self.grid.krieg_all_mmodels()
