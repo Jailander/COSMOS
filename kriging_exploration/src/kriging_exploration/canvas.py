@@ -7,6 +7,28 @@ from matplotlib import colors as mcolors
 from map_coords import MapCoords
 
 
+def overlay_image_alpha(img, img_overlay):
+    """Overlay img_overlay on top of img at the position specified by
+    pos and blend using alpha_mask.
+    """
+    show_image = img.copy()
+    alpha =  img_overlay[:, :, 3] / 255.0   # Alpha mask must contain values 
+                                            # within the range [0, 1] 
+                                            # and be the same size as img_overlay.
+    # Image ranges
+    y1, y2 = 0, img.shape[0]
+    x1, x2 = 0, img.shape[1]
+
+    channels = img.shape[2]
+
+    alpha_inv = 1.0 - alpha
+
+    for c in range(channels):
+        show_image[y1:y2, x1:x2, c] = (alpha * img_overlay[y1:y2, x1:x2, c] + alpha_inv * img[y1:y2, x1:x2, c])
+    return show_image
+
+
+
 class ViewerCanvas(object):
 
     def __init__(self, shape, centre, res):

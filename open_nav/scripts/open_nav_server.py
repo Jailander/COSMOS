@@ -4,6 +4,8 @@ import numpy as np
 import rospy
 import math
 
+import argparse
+
 import actionlib
 from sensor_msgs.msg import NavSatFix
 import open_nav.msg
@@ -140,5 +142,9 @@ class opennavserver(object):
         self.pub.publish(cmd)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--teleport", type=bool, default=False, help="activate teleport mode (mainly for simulation)")
+    args = parser.parse_args()    
+    
     rospy.init_node('open_nav')
-    server = opennavserver(rospy.get_name(), teleport=False)
+    server = opennavserver(rospy.get_name(), teleport=args.teleport)

@@ -9,33 +9,6 @@ from krigging_data import KriggingData
 from map_polyareas import MapPolyareas
 
 
-#def line_intersection(line1, line2):
-#    #print line1
-#    #print line2    
-#    
-#    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-#    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1]) #Typo was here
-#
-#    def det(a, b):
-#        return a[0] * b[1] - a[1] * b[0]
-#
-#    div = det(xdiff, ydiff)
-#    if div == 0:
-#       return False, (-1, -1)
-#
-#    d = (det(*line1), det(*line2))
-#    x = det(d, xdiff) / div
-#    y = det(d, ydiff) / div
-#    
-#    if x>= min(line1[0][0], line1[1][0]) and x <= max(line1[0][0], line1[1][0]):
-#        if x>= min(line2[0][0], line2[1][0]) and x <= max(line2[0][0], line2[1][0]):
-#            if  y>= min(line1[0][1], line1[1][1]) and y <= max(line1[0][1], line1[1][1]):
-#                if  y>= min(line2[0][1], line2[1][1]) and y <= max(line2[0][1], line2[1][1]):
-#                    return True, (x, y)
-#    
-#    return False, (-1, -1)
-
-
 def PolyArea(x,y):
     return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
@@ -59,6 +32,11 @@ class DataGrid(object):
         self.create_grid(cell_size)
 
         self.models=[]
+
+
+    def krieg_all_mmodels(self):
+        for i in self.models:
+            i.do_krigging()
 
 
     def _load_limits(self, limits_fn):
@@ -87,9 +65,9 @@ class DataGrid(object):
                     cx, cy = self.get_cell_inds_from_coords(b)
                     if cx >= 0 and cy >= 0:
                         dt.append(KriggingDataPoint(b,(cx,cy),j['data'][i]))
-                        print cx, cy
+                        #print cx, cy
                     #print b
-                    print j['data'][i]
+                    #print j['data'][i]
             kd.add_data(dt)
             self.models.append(kd)
     
