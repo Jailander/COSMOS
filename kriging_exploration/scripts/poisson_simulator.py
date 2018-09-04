@@ -4,22 +4,22 @@ import signal
 import yaml
 import sys
 import argparse
+import rospy
+
+import cv2
+
 import kriging_exploration.canvas
 
 from kriging_exploration.map_coords import MapCoords
-from kriging_exploration.canvas import ViewerCanvas
+#from kriging_exploration.canvas import ViewerCanvas
 from kriging_exploration.visualiser import KrigingVisualiser
 
 
 
 import numpy as np
 
-import cv2
 
-import matplotlib as mpl
-import matplotlib.cm as cm
 
-import rospy
 
 import std_msgs
 
@@ -48,11 +48,15 @@ class PoissonSimulation(KrigingVisualiser):
         'help': 'press \'h\' for help',
         'none': ''
     }
+    draw_mode="none"
+    current_model=0
+    running = True
+    publish = False
 
     def __init__(self, field, cell_size):
-        self.running = True
-        signal.signal(signal.SIGINT, self.signal_handler)
 
+        signal.signal(signal.SIGINT, self.signal_handler)
+        self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=False, queue_size=1)
 
         print "Creating visualiser object"
         super(PoissonSimulation, self).__init__(field['field']['lat'], field['field']['lon'], field['field']['zoom'], 640)
@@ -62,41 +66,99 @@ class PoissonSimulation(KrigingVisualiser):
             b=MapCoords(i[0],i[1])
             limits.append(b)
 
-        cv2.namedWindow('SimpleDataVisualiser')
+        cv2.namedWindow('Kriging_simulator')
+        cv2.setMouseCallback('Kriging_simulator', self.click_callback)
+        
         self.image = self.satellite.base_image.copy()
 
         self.create_grid(cell_size, limits)
         self.draw_grid()
 
+        self.load_groundtruth_data('airfield-sim.data')
+
+        self.draw_inputs(0, alpha=200)
 
 
-        self.load_groundtruth('airfield-sim.data')
+        pubtim = rospy.Timer(rospy.Duration(0.5), self.pub_timer_callback)
+
         self.grid.krieg_all_mmodels()
+        self.draw_krigged(0, alpha=200)
 
         self.redraw()
-#        self.drawing_grid(self.centre, -15.5)
-#        self.generate_files()
+
         while(self.running):
-            cv2.imshow('SimpleDataVisualiser', self.image)
+            cv2.imshow('Kriging_simulator', self.image)
             k = cv2.waitKey(20) & 0xFF
-#            self._change_mode(k)
+            self._change_mode(k)
             if k == 27:
                 self.running = False
+
+        pubtim.shutdown()
         cv2.destroyAllWindows()       
         sys.exit(0)
 
 
-
-    def load_groundtruth(self, filename):
-        self.grid.load_data_from_yaml(filename)
-        self.vmin, self.vmax = self.grid.get_max_min_vals()
-        print "LIMS: " + str(self.vmin) + " " + str(self.vmax)
-        self.n_models=len(self.grid.models)
-        self.current_model=0
-
-
     def redraw(self):
+        self.base_image = self.satellite.base_image.copy()
+        if self.draw_mode=='inputs':
+            self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.model_canvas[self.current_model].image)
+        if self.draw_mode=='kriging':
+            self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.kriging_canvas[self.current_model].image)
         self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.grid_canvas.image)
+        
+        
+    def _change_mode(self, k):
+        if k == 27:
+            self.running = False
+        elif k == ord('q'):
+            self.running = False
+        elif k == ord('n'):
+            print len(self.grid.models)
+        elif k == ord('i'):
+            if self.n_models > 0:
+                self.draw_mode="inputs"
+                self.current_model=0
+                self.redraw()
+        elif k == ord('k'):
+            if self.n_models > 0:
+                self.draw_mode="kriging"
+                self.current_model=0
+                self.redraw()
+
+    def pub_timer_callback(self, event):
+        if self.publish:
+            hmm = KrigInfo()               
+            hmm.header = std_msgs.msg.Header()
+            hmm.header.stamp = rospy.Time.now() 
+            hmm.coordinates.latitude = self.scan_coord.lat
+            hmm.coordinates.longitude = self.scan_coord.lon
+            
+            cx, cy = self.grid.get_cell_inds_from_coords(self.scan_coord)            
+            
+            for i in self.grid.models:
+                mmh = KrigMsg()
+                mmh.model_name = i.name
+                mmh.measurement = i.output[cy][cx]
+                hmm.data.append(mmh)
+            
+            self.data_pub.publish(hmm)            
+
+
+    def click_callback(self, event, x, y, flags, param):
+        #print "click"
+        
+        if event == cv2.EVENT_LBUTTONDOWN:
+            click_coord = self.satellite._pix2coord(x,y)
+            cx, cy = self.grid.get_cell_inds_from_coords(click_coord)
+
+            if cx <0 or cy<0:
+                print "click outside the grid"
+            else:
+                self.scan_coord=click_coord
+                self.publish=True
+        elif event == cv2.EVENT_RBUTTONDOWN:
+            self.publish=False
+
 
 
     def signal_handler(self, signal, frame):

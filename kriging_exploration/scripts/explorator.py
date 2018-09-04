@@ -526,8 +526,6 @@ class Explorator(SimpleKrigingVisualiser):
         self.model_legend[nm].draw_legend(minv, maxv, colmap, title="Kriging")
         
 
-
-
     def draw_krigged(self, nm):
         print "drawing kriging" + str(nm)
 
