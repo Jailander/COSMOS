@@ -65,7 +65,9 @@ class SImPos(object):
 if __name__ == '__main__':
     rospy.init_node('sim_pos')
 #    SImPos(53.262347, -0.527716, 0.0) #COSMOS
-    SImPos(53.267309, -0.532824, 0.0) #Football
+#    SImPos(53.267309, -0.532824, 0.0) #Football
+    SImPos(53.138604, 0.004182, 0.0) #Airfield
+    
 #    SImPos(39.432305, 22.79269, 0.0) #Greece
 
     

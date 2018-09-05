@@ -1,10 +1,12 @@
-#import numpy as np
+import numpy as np
 import cv2
-
+import rospy
 
 import matplotlib as mpl
 import matplotlib.cm as cm
 #from matplotlib import colors as mcolors
+
+from sensor_msgs.msg import NavSatFix
 
 from kriging_exploration.satellite import SatelliteImage
 from kriging_exploration.map_coords import MapCoords
@@ -35,6 +37,7 @@ class SimpleKrigingVisualiser(object):
 
 class KrigingVisualiser(object):
 
+    
     def __init__(self, lat_deg, lon_deg, zoom, size):
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
         self.base_image = self.satellite.base_image.copy()
@@ -138,4 +141,8 @@ class KrigingVisualiser(object):
         self.kriging_canvas[nm].draw_legend(minv, maxv, colmap, title="Kriging")
         
         self.redraw()
+
+
+    def add_gps_canvas(self):
+        self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
