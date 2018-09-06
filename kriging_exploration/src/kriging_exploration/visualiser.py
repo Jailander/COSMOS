@@ -82,6 +82,22 @@ class KrigingVisualiser(object):
         print self.model_canvas_names
         
 
+    def add_canvases(self):
+        self.n_models=len(self.grid.models)
+        
+        for i in self.grid.models:
+            if i.name not in self.model_canvas_names:       
+                self.model_canvas_names.append(i.name)
+                self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+ #            self.draw_inputs(self.model_canvas_names.index(i.name))
+        
+        
+        
+        
+        
+        
+
     def draw_coordinate(self, lat, lon, colour='white', size=6, thickness=2, alpha=128):
         a = MapCoords(lat, lon)
         self.canvas.draw_coordinate(a,colour,size=size, thickness=thickness)

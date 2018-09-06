@@ -5,6 +5,7 @@ import yaml
 import sys
 import argparse
 import rospy
+import random
 
 import cv2
 import actionlib
@@ -25,6 +26,8 @@ import numpy as np
 import std_msgs
 
 from cosmos_msgs.msg import KrigInfo
+from kriging_exploration.topological_map import TopoMap
+
 from cosmos_msgs.msg import KrigMsg
 from cosmos_msgs.srv import CompareModels
 
@@ -55,6 +58,8 @@ class PoissonExploration(KrigingVisualiser):
     publish = False
     current_counts=0
     number_of_messages=0
+    doing_reading=False    
+    maximum_dev=2.5
     
     def __init__(self, field, cell_size):
 
@@ -75,7 +80,7 @@ class PoissonExploration(KrigingVisualiser):
 
         self.create_grid(cell_size, limits)
         self.draw_grid()
-
+        self.topo_map= TopoMap(self.grid)
 
         rospy.Subscriber('/kriging_data', KrigInfo, self.scan_callback)
         rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
@@ -130,16 +135,26 @@ class PoissonExploration(KrigingVisualiser):
             self.current_counts=0
             self.number_of_messages=0
         elif k == ord('i'):
-            if self.n_models > 0:
-                self.draw_mode="inputs"
-                self.draw_inputs(0, alpha=200)
-                self.current_model=0
-                self.redraw()
+#            if self.n_models > 0:
+            self.draw_mode="inputs"
+            self.add_canvases()
+            self.draw_inputs(0, alpha=200)
+            self.current_model=0
+            self.redraw()
         elif k == ord('k'):
-            if self.n_models > 0:
-                self.draw_mode="kriging"
-                self.current_model=0
-                self.redraw()
+            self.draw_mode="kriging"
+            self.add_canvases()
+            self.grid.krieg_all_mmodels()
+            self.draw_krigged(0, alpha=200)
+            self.current_model=0
+        elif k == ord('g'):        
+#            for i in self.topo_map.waypoints:
+#                print i.name
+            rwo= random.choice(self.topo_map.waypoints)
+            self.navigate_to(rwo.coord)
+            info_str='start_reading'
+            self.req_data_pub.publish(info_str)
+            self.doing_reading=True
 
 
     def draw_timer_callback(self, event):
@@ -147,6 +162,20 @@ class PoissonExploration(KrigingVisualiser):
 
     def refresh(self):
         self.show_image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.gps_canvas.image)
+
+    def navigate_to(self, coord):
+        self.open_nav_client.cancel_goal()
+        targ = open_nav.msg.OpenNavActionGoal()
+
+        #goal.goal.goal.header.
+        targ.goal.coords.header.stamp=rospy.Time.now()
+        targ.goal.coords.latitude=coord.lat
+        targ.goal.coords.longitude=coord.lon
+
+        print targ
+        self.navigating=True
+        self.open_nav_client.send_goal(targ.goal)
+        self.open_nav_client.wait_for_result()        
 
 
     def click_callback(self, event, x, y, flags, param):
@@ -157,21 +186,10 @@ class PoissonExploration(KrigingVisualiser):
             if cx <0 or cy<0:
                 print "click outside the grid"
             else:
-                self.open_nav_client.cancel_goal()
-                targ = open_nav.msg.OpenNavActionGoal()
-
-                #goal.goal.goal.header.
-                targ.goal.coords.header.stamp=rospy.Time.now()
-                targ.goal.coords.latitude=click_coord.lat
-                targ.goal.coords.longitude=click_coord.lon
-
-                print targ
-                self.navigating=True
-                self.open_nav_client.send_goal(targ.goal)
-                self.open_nav_client.wait_for_result()
+                self.navigate_to(click_coord)
                 info_str='start_reading'
                 self.req_data_pub.publish(info_str)
-
+                self.doing_reading=True
 
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
@@ -181,10 +199,20 @@ class PoissonExploration(KrigingVisualiser):
             
         
     def scan_callback(self, data):
-        self.current_counts += data.data[0].measurement
-        self.number_of_messages += 1
-        print self.number_of_messages, self.current_counts, self.current_counts/self.number_of_messages, np.sqrt(self.current_counts), 100 * np.sqrt(self.current_counts)/self.current_counts
-
+        if self.doing_reading:
+            self.current_counts += data.data[0].measurement
+            self.number_of_messages += 1
+            sigma = 100 * np.sqrt(self.current_counts)/self.current_counts
+            rate = self.current_counts/self.number_of_messages
+    #        print data.data[0].model_name
+            print self.number_of_messages, self.current_counts, rate, sigma
+            if sigma < self.maximum_dev:
+                self.doing_reading=False
+                info_str='stop_reading'
+                self.req_data_pub.publish(info_str)
+                self.current_counts=0
+                self.number_of_messages=0
+                self.grid.add_data_point(data.data[0].model_name, self.gps_coord, rate)
 
     def signal_handler(self, signal, frame):
         cv2.destroyAllWindows()
