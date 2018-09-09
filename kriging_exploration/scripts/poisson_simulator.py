@@ -86,8 +86,9 @@ class PoissonSimulation(KrigingVisualiser):
         drawtim = rospy.Timer(rospy.Duration(0.03), self.draw_timer_callback)
 
         self.grid.krieg_all_mmodels()
+        
         self.draw_krigged(0, alpha=200)
-
+        self.draw_variance(0, alpha=200)
 
 
         self.redraw()
@@ -113,6 +114,8 @@ class PoissonSimulation(KrigingVisualiser):
             self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.model_canvas[self.current_model].image)
         if self.draw_mode=='kriging':
             self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.kriging_canvas[self.current_model].image)
+        if self.draw_mode=='variance':
+            self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.sigma_canvas[self.current_model].image)
         self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.grid_canvas.image)
         
         
@@ -133,7 +136,11 @@ class PoissonSimulation(KrigingVisualiser):
                 self.draw_mode="kriging"
                 self.current_model=0
                 self.redraw()
-
+        elif k == ord('v'):
+            if self.n_models > 0:
+                self.draw_mode="variance"
+                self.current_model=0
+                self.redraw()
 
     def draw_timer_callback(self, event):
         self.refresh()

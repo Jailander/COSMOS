@@ -9,15 +9,10 @@ from map_coords import MapCoords
 from kriging_exploration.srv import GetTsp
 import matplotlib.pyplot as plt
 
-def line_intersection(l1, l2):
-#    line1 = [l1[0].coord.northing, l1[0].coord.easting, l1[1].coord.northing, l1[1].coord.easting]
-#    line2 = [l2[0].coord.northing, l2[0].coord.easting, l2[1].coord.northing, l2[1].coord.easting]
-    
+def line_intersection(l1, l2):    
     line1 = [[l1[0].ind[0], l1[0].ind[1]], [l1[1].ind[0], l1[1].ind[1]]]
     line2 = [[l2[0].ind[0], l2[0].ind[1]], [l2[1].ind[0], l2[1].ind[1]]]    
     
-#    xdiff = (line1[0].coord.northing - line1[1].coord.northing, line2[0].coord.northing - line2[1].coord.northing)
-#    ydiff = (line1[0].coord.easting - line1[1].coord.easting, line2[0].coord.easting - line2[1].coord.easting) #Typo was here
     xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
     ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
 
@@ -31,9 +26,6 @@ def line_intersection(l1, l2):
     d = (det(*line1), det(*line2))
     x = det(d, xdiff) / div
     y = det(d, ydiff) / div
-
-    #print x,y
-    #check interval
 
     if x>= min(line1[0][0], line1[1][0]) and x <= max(line1[0][0], line1[1][0]):
         if x>= min(line2[0][0], line2[1][0]) and x <= max(line2[0][0], line2[1][0]):

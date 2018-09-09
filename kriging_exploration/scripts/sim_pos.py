@@ -11,6 +11,9 @@ from sensor_msgs.msg import NavSatFix
 from cosmos_msgs.srv import TeleportRobot
 
 class SImPos(object):
+    teleport_speed=1.2
+    time_scale=20.0
+
 
     def __init__(self, lat, lon, northang):
         self.gps_coord = MapCoords(lat,lon)
@@ -29,10 +32,13 @@ class SImPos(object):
 
 
     def teleport_cb(self, req):
-        print req
+        #print req
         self.gps_coord = MapCoords(req.coordinates.latitude + 0.000001,req.coordinates.longitude + 0.000001)
+        dist=self.gps_coord - self.precord
+        print "Teleporting: ", dist[0]
         self.precord = self.gps_coord
-        rospy.sleep(2.0)
+        twait=dist[0]/(1.2*100)
+        rospy.sleep(twait)
         return True
 
     def callback(self, data):
@@ -67,7 +73,8 @@ if __name__ == '__main__':
 #    SImPos(53.262347, -0.527716, 0.0) #COSMOS
 #    SImPos(53.267309, -0.532824, 0.0) #Football
     SImPos(53.138604, 0.004182, 0.0) #Airfield
-    
+#    SImPos(53.103029, -0.481229, 0.0) #Blankney Grass
+
 #    SImPos(39.432305, 22.79269, 0.0) #Greece
 
     

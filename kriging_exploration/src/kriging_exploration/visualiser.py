@@ -46,6 +46,7 @@ class KrigingVisualiser(object):
         
         self.model_canvas=[]
         self.kriging_canvas=[]
+        self.sigma_canvas=[]
         self.model_canvas_names=[]
         
         self.refresh_image()
@@ -82,6 +83,7 @@ class KrigingVisualiser(object):
         for i in range(len(self.grid.models)):
             self.model_canvas_names.append(self.grid.models[i].name)
             self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+            self.sigma_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
             self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
 
         print "Models: "
@@ -95,10 +97,9 @@ class KrigingVisualiser(object):
             if i.name not in self.model_canvas_names:       
                 self.model_canvas_names.append(i.name)
                 self.model_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
+                self.sigma_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
                 self.kriging_canvas.append(ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res))
  #            self.draw_inputs(self.model_canvas_names.index(i.name))
-        
-        
         
         
     def draw_coordinate(self, lat, lon, colour='white', size=6, thickness=2, alpha=128):
@@ -158,8 +159,37 @@ class KrigingVisualiser(object):
                 self.kriging_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
         
         self.kriging_canvas[nm].draw_legend(minv, maxv, colmap, title="Kriging")
+#        self.redraw()
+
+
+    def draw_variance(self, nm, alpha=50):
+        print "drawing variance" + str(nm)
         
-        self.redraw()
+        minv =  self.grid.models[nm].min_var
+        maxv =  self.grid.models[nm].max_var
+        
+        if (maxv-minv) <=1:
+            maxv = maxv + 50
+            minv = minv - 50
+        
+        norm = mpl.colors.Normalize(vmin=minv, vmax= maxv)
+        cmap = cm.jet
+        colmap = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        self.sigma_canvas[nm].clear_image()
+#        self.klegend2_canvas[nm].clear_image()
+        
+        for i in range(self.grid.models[nm].shape[0]):
+            for j in range(self.grid.models[nm].shape[1]):
+                cell = self.grid.cells[i][j]
+                a= colmap.to_rgba(int(self.grid.models[nm].variance[i][j]))
+                b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*alpha))
+                self.sigma_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
+
+#        self.klegend2_canvas[nm].put_text(self.grid.models[nm].name)
+        self.sigma_canvas[nm].draw_legend(minv, maxv, colmap, title="Variance")
+#        self.redraw()
+
 
 
     def add_gps_canvas(self):
