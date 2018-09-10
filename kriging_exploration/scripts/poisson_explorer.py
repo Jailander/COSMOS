@@ -186,10 +186,15 @@ class PoissonExploration(KrigingVisualiser):
             if cx <0 or cy<0:
                 print "click outside the grid"
             else:
-                self.navigate_to(click_coord)
-                info_str='start_reading'
-                self.req_data_pub.publish(info_str)
-                self.doing_reading=True
+                for i in self.topo_map.waypoints:
+                    if (cy,cx) == i.ind:
+                        print i.name, i.coord.easting, i.coord.northing
+#
+#                self.navigate_to(click_coord)
+#                info_str='start_reading'
+#                self.req_data_pub.publish(info_str)
+#                self.doing_reading=True
+                
 
     def gps_callback(self, data):
         if not np.isnan(data.latitude):
