@@ -170,10 +170,16 @@ class PoissonExploration(KrigingVisualiser):
             self.start_time=time.time()
             self.exploring = True
         elif k == ord('h'):
+            shapeo = self.grid.models[0].output.shape
             print self.explo_state
             elapsed_time= (time.time()-self.start_time)*100
             print elapsed_time, self.nsamples
-
+            print "Waiting for Service"
+            rospy.wait_for_service('/compare_model')
+            compare_serv = rospy.ServiceProxy('/compare_model', CompareModels)
+            vals = np.reshape(self.grid.models[0].output, -1)
+            resp1 = compare_serv('kriging', 0, shapeo[0], shapeo[1], vals.tolist())
+            print resp1
 
     def draw_timer_callback(self, event):
         self.refresh()
@@ -284,7 +290,6 @@ class PoissonExploration(KrigingVisualiser):
             elapsed_time = self.get_exploration_time()
             self.gps_canvas.put_text(str(elapsed_time),colour=(230,230,230,255), text_size=0.8, x_or=10, y_or=25)
         if not np.isnan(data.latitude):
-            self.gps_canvas.clear_image()
             self.gps_coord = MapCoords(data.latitude,data.longitude)            
             self.gps_canvas.draw_coordinate(self.gps_coord,'black',size=2, thickness=2, alpha=255)
 
@@ -306,12 +311,15 @@ class PoissonExploration(KrigingVisualiser):
         self.current_counts=0
         self.number_of_messages=0
         self.grid.add_data_point(data.data[0].model_name, self.gps_coord, rate)
+        
+        print "Poisson Value: ", rate*60
+        
         wp = self.get_wp_from_coord(self.gps_coord)
         self.explo_plan.set_wp_as_explored(wp.name)
         self.nsamples+=1
         
         
-        print "Poisson Value: ", rate*60, self.get_exploration_time()
+        print "Poisson Value: ", rate*60#, self.get_exploration_time()
         if self.explo_state == 'Scanning':
             self.explo_state='Scan_done'
         self.doing_reading=False

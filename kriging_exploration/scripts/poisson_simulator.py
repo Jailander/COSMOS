@@ -59,6 +59,8 @@ class PoissonSimulation(KrigingVisualiser):
 
         self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=False, queue_size=1)
         rospy.Subscriber('/request_scan', std_msgs.msg.String, self.scan_callback)
+        rospy.Service('/compare_model', CompareModels, self.model_comparison_cb)
+
 
         print "Creating visualiser object"
         super(PoissonSimulation, self).__init__(field['field']['lat'], field['field']['lon'], field['field']['zoom'], 640)
@@ -194,6 +196,15 @@ class PoissonSimulation(KrigingVisualiser):
             self.gps_coord = MapCoords(data.latitude,data.longitude)            
             self.gps_canvas.draw_coordinate(self.gps_coord,'black',size=2, thickness=2, alpha=255)
             
+
+    def model_comparison_cb(self, req):
+        print req.model_name, req.model_index, req.height, req.width
+        compm = np.reshape(np.asarray(req.vals), (req.height, req.width))
+        if req.model_name == 'kriging':
+            diff = self.grid.models[req.model_index].output-compm
+        else :
+            diff = self.grid.mean_output-compm
+        return True, np.mean(diff), np.mean(diff**2), np.std(diff), np.var(diff)
 
 
     def signal_handler(self, signal, frame):
