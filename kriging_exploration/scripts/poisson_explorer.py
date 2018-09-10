@@ -59,9 +59,11 @@ class PoissonExploration(KrigingVisualiser):
     exploring=False    
     explo_state='None'
     nsamples=0
+    strategy='greedy'    
+    
     
     mission_time_limit=7200
-    maximum_dev=2.5
+    maximum_dev=5.0
     time_scale=20.0
     
     
@@ -176,20 +178,31 @@ class PoissonExploration(KrigingVisualiser):
     def draw_timer_callback(self, event):
         self.refresh()
 
+    def get_next_goal(self):
+        if self.strategy == 'random':
+            self.explo_plan.get_random_target()
+        elif self.strategy == 'greedy':
+            if self.nsamples < 3:
+                self.explo_plan.get_random_target()
+            else:
+                self.explo_plan.get_greedy_target(self.grid.models[0].variance)
+                
+        rwo=self.explo_plan.get_next_target()
+        return rwo
 
     def control_timer_callback(self, event):
         if self.exploring:
             if self.explo_state == 'None' or self.explo_state == 'Scan_done':
                 elt = self.get_exploration_time()
                 if elt < self.mission_time_limit:
-                    if self.nsamples >=3:
+                    if self.nsamples >= 3:
                         self.draw_mode="variance"
                         self.add_canvases()
                         self.grid.krieg_all_mmodels()
                         self.draw_variance(0, alpha=200)
                         self.redraw()
-                    self.explo_plan.get_random_target()
-                    rwo=self.explo_plan.get_next_target()
+                    
+                    rwo=self.get_next_goal()
                     if rwo:
                         self.navigate_to(rwo.coord)
                         self.explo_state='Navigating'

@@ -11,7 +11,7 @@ from sensor_msgs.msg import NavSatFix
 from cosmos_msgs.srv import TeleportRobot
 
 class SImPos(object):
-    teleport_speed=1.2
+    teleport_speed=0.6
     time_scale=20.0
 
 
@@ -35,9 +35,9 @@ class SImPos(object):
         #print req
         self.gps_coord = MapCoords(req.coordinates.latitude + 0.000001,req.coordinates.longitude + 0.000001)
         dist=self.gps_coord - self.precord
-        print "Teleporting: ", dist[0]
         self.precord = self.gps_coord
-        twait=dist[0]/(1.2*100)
+        twait=dist[0]/(self.teleport_speed*self.time_scale)
+        print "Teleporting: ", dist[0], twait, twait*self.time_scale
         rospy.sleep(twait)
         return True
 
