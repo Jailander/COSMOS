@@ -53,6 +53,7 @@ class TopoNode(object):
 class TopoMap(object):
     def __init__(self, grid):
         self.waypoints=[]
+        self.waypoint_names=[]
         self._calculate_waypoints(grid)
         
     def _calculate_waypoints(self, grid):
@@ -63,6 +64,7 @@ class TopoMap(object):
                     name = "WayPoint%03d" %ind
                     d = TopoNode(name, grid.cells[i][j], (i, j))
                     self.waypoints.append(d)
+                    self.waypoint_names.append(name)
                     ind+=1
                     #print name
         #print len(self.waypoints)

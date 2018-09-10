@@ -2,7 +2,7 @@
 import numpy as np
 
 from pykrige.ok import OrdinaryKriging
-import pykrige.kriging_tools as kt
+#import pykrige.kriging_tools as kt
 #from map_coords import MapCoords
 
 
@@ -73,6 +73,14 @@ class KriggingData(object):
             # grid of points, on a masked rectangular grid of points, or with arbitrary points.
             # (See OrdinaryKriging.__doc__ for more information.)
             z, ss = OK.execute('grid', self.gridx, self.gridy)
+
+#            print "Check HERE:"        
+#            print self.shape            
+#            print self.gridx
+#            
+#            print "----------------"
+
+
             self.kriged=True
         except:
             print "this failed at: ", self.name

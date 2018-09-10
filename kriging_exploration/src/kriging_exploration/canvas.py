@@ -189,7 +189,7 @@ class ViewerCanvas(object):
         cv2.putText(self.image, str(np.ceil(vmax)) + " " + units, (int(490)-tsz[0][0]-5, int(580)), font, 0.6, b, 2)
         
 #        cv2.putText(self.image, title, (230,175), font, 0.8, (220, 220, 220,255), 2)
-        #cv2.putText(self.image, title, (250,250), font, 0.8, (220, 220, 220,255), 2)    
+        cv2.putText(self.image, title, (260,560), font, 0.8, (220, 220, 220,255), 2)    
     
     def put_text(self,text,colour=(230,230,230,255), text_size=0.8, x_or=400, y_or=250):
         font = cv2.FONT_HERSHEY_SIMPLEX

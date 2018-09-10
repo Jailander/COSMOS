@@ -5,7 +5,8 @@ import yaml
 import sys
 import argparse
 import rospy
-import random
+
+import time
 
 import cv2
 import actionlib
@@ -30,12 +31,7 @@ from kriging_exploration.topological_map import TopoMap
 
 from cosmos_msgs.msg import KrigMsg
 from cosmos_msgs.srv import CompareModels
-
-#import satellite
-#from kriging_exploration.satellite import SatelliteImage
-
-
-#from krigging_data import KriggingData
+from kriging_exploration.poisson_exploration import PoissonExplorationPlan
 from sensor_msgs.msg import NavSatFix
 
 
@@ -59,7 +55,17 @@ class PoissonExploration(KrigingVisualiser):
     current_counts=0
     number_of_messages=0
     doing_reading=False    
-    maximum_dev=2.5
+
+    exploring=False    
+    explo_state='None'
+    nsamples=0
+    strategy='greedy'    
+    
+    
+    mission_time_limit=7200
+    maximum_dev=5.0
+    time_scale=20.0
+    
     
     def __init__(self, field, cell_size):
 
@@ -75,6 +81,7 @@ class PoissonExploration(KrigingVisualiser):
 
         cv2.namedWindow('poisson_explorer')
         cv2.setMouseCallback('poisson_explorer', self.click_callback)
+        
         
         self.image = self.satellite.base_image.copy()
 
@@ -92,9 +99,9 @@ class PoissonExploration(KrigingVisualiser):
         self.open_nav_client = actionlib.SimpleActionClient('/open_nav', open_nav.msg.OpenNavAction)
         self.open_nav_client.wait_for_server()
 
-
+        self.explo_plan = PoissonExplorationPlan(self.topo_map)
         drawtim = rospy.Timer(rospy.Duration(0.03), self.draw_timer_callback)
-
+        contim = rospy.Timer(rospy.Duration(0.1), self.control_timer_callback)
 #        self.grid.krieg_all_mmodels()
 #        self.draw_krigged(0, alpha=200)
 
@@ -109,6 +116,7 @@ class PoissonExploration(KrigingVisualiser):
 #            rospy.sleep(0.05)
 
         drawtim.shutdown()
+        contim.shutdown()
         cv2.destroyAllWindows()       
         sys.exit(0)
 
@@ -120,7 +128,10 @@ class PoissonExploration(KrigingVisualiser):
             self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.model_canvas[self.current_model].image)
         if self.draw_mode=='kriging':
             self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.kriging_canvas[self.current_model].image)
+        if self.draw_mode=='variance':
+            self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.sigma_canvas[self.current_model].image)
         self.image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.grid_canvas.image)
+        
         
         
     def _change_mode(self, k):
@@ -147,18 +158,70 @@ class PoissonExploration(KrigingVisualiser):
             self.grid.krieg_all_mmodels()
             self.draw_krigged(0, alpha=200)
             self.current_model=0
-        elif k == ord('g'):        
-#            for i in self.topo_map.waypoints:
-#                print i.name
-            rwo= random.choice(self.topo_map.waypoints)
-            self.navigate_to(rwo.coord)
-            info_str='start_reading'
-            self.req_data_pub.publish(info_str)
-            self.doing_reading=True
+            self.redraw()
+        elif k == ord('v'):
+            self.draw_mode="variance"
+            self.add_canvases()
+            self.grid.krieg_all_mmodels()
+            self.draw_variance(0, alpha=200)
+            self.current_model=0
+            self.redraw()
+        elif k == ord('g'):
+            self.start_time=time.time()
+            self.exploring = True
+        elif k == ord('h'):
+            print self.explo_state
+            elapsed_time= (time.time()-self.start_time)*100
+            print elapsed_time, self.nsamples
 
 
     def draw_timer_callback(self, event):
         self.refresh()
+
+    def get_next_goal(self):
+        if self.strategy == 'random':
+            self.explo_plan.get_random_target()
+        elif self.strategy == 'greedy':
+            if self.nsamples < 3:
+                self.explo_plan.get_random_target()
+            else:
+                self.explo_plan.get_greedy_target(self.grid.models[0].variance)
+                
+        rwo=self.explo_plan.get_next_target()
+        return rwo
+
+    def control_timer_callback(self, event):
+        if self.exploring:
+            if self.explo_state == 'None' or self.explo_state == 'Scan_done':
+                elt = self.get_exploration_time()
+                if elt < self.mission_time_limit:
+                    if self.nsamples >= 3:
+                        self.draw_mode="variance"
+                        self.add_canvases()
+                        self.grid.krieg_all_mmodels()
+                        self.draw_variance(0, alpha=200)
+                        self.redraw()
+                    
+                    rwo=self.get_next_goal()
+                    if rwo:
+                        self.navigate_to(rwo.coord)
+                        self.explo_state='Navigating'
+                    else:
+                        print "No More Tagets"
+                        self.explo_state='Finished'
+                        self.exploring=False
+                else:
+                    print "Time Limit Reached"
+                    self.explo_state='Finished'
+                    self.exploring=False
+            elif self.explo_state=='Navigating':
+                if self.open_nav_client.simple_state ==2:
+                    print "DONE NAVIGATING"
+                    info_str='start_reading'
+                    self.req_data_pub.publish(info_str)
+                    self.doing_reading=True                    
+                    self.explo_state = 'Scanning'
+            
 
     def refresh(self):
         self.show_image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.gps_canvas.image)
@@ -172,10 +235,10 @@ class PoissonExploration(KrigingVisualiser):
         targ.goal.coords.latitude=coord.lat
         targ.goal.coords.longitude=coord.lon
 
-        print targ
+        #print targ
         self.navigating=True
         self.open_nav_client.send_goal(targ.goal)
-        self.open_nav_client.wait_for_result()        
+        #self.open_nav_client.wait_for_result()        
 
 
     def click_callback(self, event, x, y, flags, param):
@@ -186,38 +249,79 @@ class PoissonExploration(KrigingVisualiser):
             if cx <0 or cy<0:
                 print "click outside the grid"
             else:
+                
+                print cx, cy
+
                 for i in self.topo_map.waypoints:
                     if (cy,cx) == i.ind:
-                        print i.name, i.coord.easting, i.coord.northing
-#
-#                self.navigate_to(click_coord)
-#                info_str='start_reading'
-#                self.req_data_pub.publish(info_str)
-#                self.doing_reading=True
-                
+                        self.navigate_to(i.coord)
+                        self.open_nav_client.wait_for_result()
+                        info_str='start_reading'
+                        self.req_data_pub.publish(info_str)
+                        self.doing_reading=True
 
+
+    def get_wp_from_coord(self, coord):
+        wp=None
+        cx, cy = self.grid.get_cell_inds_from_coords(coord)
+        for i in self.topo_map.waypoints:
+            if (cy,cx) == i.ind:
+                wp=i
+                break
+        return wp
+
+    def get_exploration_time(self):
+        if self.exploring:
+            elapsed_time= np.ceil((time.time()-self.start_time)*self.time_scale)
+            return elapsed_time
+        else:
+            return 0
+            
+            
     def gps_callback(self, data):
+        self.gps_canvas.clear_image()
+        if self.exploring:
+            elapsed_time = self.get_exploration_time()
+            self.gps_canvas.put_text(str(elapsed_time),colour=(230,230,230,255), text_size=0.8, x_or=10, y_or=25)
         if not np.isnan(data.latitude):
             self.gps_canvas.clear_image()
             self.gps_coord = MapCoords(data.latitude,data.longitude)            
             self.gps_canvas.draw_coordinate(self.gps_coord,'black',size=2, thickness=2, alpha=255)
+
             
+    def compute_data(self, data):
         
+        self.current_counts += data.data[0].measurement
+        self.number_of_messages += 1
+        sigma = 100 * np.sqrt(self.current_counts)/self.current_counts
+        rate = self.current_counts/self.number_of_messages
+        #print self.number_of_messages, self.current_counts, rate, sigma
+
+        if sigma < self.maximum_dev:
+            self.finalise_reading(data, rate)
+    
+    def finalise_reading(self, data, rate):
+        info_str='stop_reading'
+        self.req_data_pub.publish(info_str)
+        self.current_counts=0
+        self.number_of_messages=0
+        self.grid.add_data_point(data.data[0].model_name, self.gps_coord, rate)
+        wp = self.get_wp_from_coord(self.gps_coord)
+        self.explo_plan.set_wp_as_explored(wp.name)
+        self.nsamples+=1
+        
+        
+        print "Poisson Value: ", rate*60, self.get_exploration_time()
+        if self.explo_state == 'Scanning':
+            self.explo_state='Scan_done'
+        self.doing_reading=False
+
+
+    
     def scan_callback(self, data):
         if self.doing_reading:
-            self.current_counts += data.data[0].measurement
-            self.number_of_messages += 1
-            sigma = 100 * np.sqrt(self.current_counts)/self.current_counts
-            rate = self.current_counts/self.number_of_messages
-    #        print data.data[0].model_name
-            print self.number_of_messages, self.current_counts, rate, sigma
-            if sigma < self.maximum_dev:
-                self.doing_reading=False
-                info_str='stop_reading'
-                self.req_data_pub.publish(info_str)
-                self.current_counts=0
-                self.number_of_messages=0
-                self.grid.add_data_point(data.data[0].model_name, self.gps_coord, rate)
+            self.compute_data(data)
+
 
     def signal_handler(self, signal, frame):
         cv2.destroyAllWindows()
