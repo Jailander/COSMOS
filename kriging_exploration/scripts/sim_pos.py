@@ -36,7 +36,7 @@ class SImPos(object):
         self.gps_coord = MapCoords(req.coordinates.latitude + 0.000001,req.coordinates.longitude + 0.000001)
         dist=self.gps_coord - self.precord
         self.precord = self.gps_coord
-        twait=dist[0]/(self.teleport_speed*self.time_scale)
+        twait=(dist[0]/self.teleport_speed)/self.time_scale
         print "Teleporting: ", dist[0], twait, twait*self.time_scale
         rospy.sleep(twait)
         return True

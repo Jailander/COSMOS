@@ -191,6 +191,9 @@ class KrigingVisualiser(object):
 #        self.redraw()
 
 
+    def add_traj_canvas(self):
+        self.traj_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+
 
     def add_gps_canvas(self):
         self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)

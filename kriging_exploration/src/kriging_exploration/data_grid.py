@@ -39,6 +39,12 @@ class DataGrid(object):
             i.do_krigging()
 
 
+    def poisson_krieg_all_mmodels(self):
+        for i in self.models:
+            i.do_poisson_krigging()
+
+
+
     def _load_limits(self, limits_fn):
         limits=[]
         f = open(limits_fn, 'r')
@@ -89,6 +95,26 @@ class DataGrid(object):
         
         cx, cy = self.get_cell_inds_from_coords(coord)
         self.models[modind].add_data(KriggingDataPoint(coord,(cx,cy), value))
+
+
+    def add_poisson_data_point(self, model_name, coord, value, rate):
+        
+        model_names=[x.name for x in self.models]
+        
+        #print model_name
+        
+#        print coord
+        #print value
+        
+        if model_name not in model_names:
+            a = KriggingData(self.shape, model_name)
+            self.models.append(a)
+            model_names=[x.name for x in self.models]
+            
+        modind = model_names.index(model_name)
+        
+        cx, cy = self.get_cell_inds_from_coords(coord)
+        self.models[modind].add_data(KriggingDataPoint(coord,(cx,cy), value, rate=rate))
         
     
     def _load_model_from_file(self, data_fn, name='default'):

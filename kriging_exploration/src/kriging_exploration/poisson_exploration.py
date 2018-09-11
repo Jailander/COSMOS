@@ -73,7 +73,7 @@ class PoissonExplorationPlan(object):
         #print maxes
         maxind=0
         
-        while not found:
+        while not found and maxind<len(maxes):
             x ,y = np.where(model_variance==maxes[maxind])
             #print "looking for: ", maxes[maxind], " (", x[0],",",y[0],")"
             for j in self.tmap.waypoints:
@@ -83,9 +83,11 @@ class PoissonExplorationPlan(object):
                         found=True
                         break
             maxind+=1
-        print "Going To:"+to_append.name
-        self.targets.append(to_append)        
-    
+        if found:
+            print "Going To:"+to_append.name
+            self.targets.append(to_append)        
+        else:
+            self.get_random_target()
 
     def get_next_target(self):
         return self.targets[0]

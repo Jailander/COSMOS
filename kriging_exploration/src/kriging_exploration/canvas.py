@@ -122,12 +122,18 @@ class ViewerCanvas(object):
         cv2.rectangle(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
         
 
-    def draw_list_of_coords(self, list_of_coords, colour, size=6, thickness=2):
+    def draw_list_of_coords(self, list_of_coords, colour, size=6, thickness=2, connect=False):
         if isinstance(colour,str):
            colour = self._get_colour_from_name(colour,128) 
         for i in list_of_coords:
             mx, my = self._coord2pix(i)
             cv2.circle(self.image, (int(mx), int(my)), size, colour, thickness)
+        if len(list_of_coords)>=2:
+            for i in range(1, len(list_of_coords)):
+                mx0, my0 =self._coord2pix(list_of_coords[i-1])
+                mx1, my1 =self._coord2pix(list_of_coords[i])
+                cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
+            
     
     def draw_polygon(self, list_of_coords, colour, thickness=2):
         for i in range(1, len(list_of_coords)):
