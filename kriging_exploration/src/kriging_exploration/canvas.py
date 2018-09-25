@@ -132,10 +132,13 @@ class ViewerCanvas(object):
             for i in range(1, len(list_of_coords)):
                 mx0, my0 =self._coord2pix(list_of_coords[i-1])
                 mx1, my1 =self._coord2pix(list_of_coords[i])
-                cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
+                if connect:
+                    cv2.line(self.image, (int(mx0), int(my0)), (int(mx1), int(my1)), colour, thickness=thickness)
             
     
     def draw_polygon(self, list_of_coords, colour, thickness=2):
+        if isinstance(colour,str):
+           colour = self._get_colour_from_name(colour,128) 
         for i in range(1, len(list_of_coords)):
             mx0, my0 =self._coord2pix(list_of_coords[i-1])
             mx1, my1 =self._coord2pix(list_of_coords[i])

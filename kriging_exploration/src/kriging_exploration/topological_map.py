@@ -1,6 +1,6 @@
 import utm
 import yaml
-
+import math
 import numpy as np
 
 from map_coords import MapCoords
@@ -48,6 +48,13 @@ class TopoNode(object):
                 s = s + str(i) + ': ' + str(self.__getattribute__(i)) + '\n'
         return s
 
+    def __sub__(self, other):
+        dnorth = self.coord.northing - other.coord.northing
+        deast = self.coord.easting - other.coord.easting
+        dist = math.hypot(deast, dnorth)
+        orient = math.atan2(dnorth, deast) * 180/math.pi
+        #return dist, orient
+        return dist, orient#, deast, dnorth
 
 
 class TopoMap(object):

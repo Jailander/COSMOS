@@ -64,6 +64,8 @@ class PoissonExploration(KrigingVisualiser):
     time_scale=20.0
     traj_points=[]
     explo_data=[]
+    sim_time=0
+    chron_pause=True
 
     exp_name='synth-exp1'    
     strategy='greedy'        
@@ -121,9 +123,10 @@ class PoissonExploration(KrigingVisualiser):
         self.open_nav_client = actionlib.SimpleActionClient('/open_nav', open_nav.msg.OpenNavAction)
         self.open_nav_client.wait_for_server()
 
-        self.explo_plan = PoissonExplorationPlan(self.topo_map)
+        self.explo_plan = PoissonExplorationPlan(self.topo_map, cell_size=cell_size)
         drawtim = rospy.Timer(rospy.Duration(0.03), self.draw_timer_callback)
         contim = rospy.Timer(rospy.Duration(0.1), self.control_timer_callback)
+        chron_tim = rospy.Timer(rospy.Duration(0.1), self.chrono_cb)
 #        self.grid.krieg_all_mmodels()
 #        self.draw_krigged(0, alpha=200)
 
@@ -139,6 +142,7 @@ class PoissonExploration(KrigingVisualiser):
 
         drawtim.shutdown()
         contim.shutdown()
+        chron_tim.shutdown()
         cv2.destroyAllWindows()       
         sys.exit(0)
 
@@ -203,7 +207,9 @@ class PoissonExploration(KrigingVisualiser):
             self.current_model=0
             self.redraw()
         elif k == ord('g'):
-            self.start_time=time.time()
+#            self.start_time=time.time()
+            self.reset_chrono()
+            self.chron_pause=False
             self.exploring = True
             self.explodist=0
             dirpath='./'+self.exp_name
@@ -212,8 +218,8 @@ class PoissonExploration(KrigingVisualiser):
         elif k == ord('h'):
             shapeo = self.grid.models[0].output.shape
             print self.explo_state
-            elapsed_time= (time.time()-self.start_time)*100
-            print elapsed_time, self.nsamples
+#            elapsed_time= (time.time()-self.start_time)*100
+#            print elapsed_time, self.nsamples
             print "Waiting for Service"
             rospy.wait_for_service('/compare_model')
             compare_serv = rospy.ServiceProxy('/compare_model', CompareModels)
@@ -227,6 +233,13 @@ class PoissonExploration(KrigingVisualiser):
     def draw_timer_callback(self, event):
         self.refresh()
 
+    def chrono_cb(self, event):
+        if not self.chron_pause:
+            self.sim_time+=1
+    
+    def reset_chrono(self):
+        self.sim_time=0
+
 
     def get_next_goal(self):
         if self.strategy == 'random':
@@ -236,6 +249,11 @@ class PoissonExploration(KrigingVisualiser):
                 self.explo_plan.get_random_target()
             else:
                 self.explo_plan.get_greedy_target(self.grid.models[0].variance)
+        elif self.strategy == 'mc':
+            if self.nsamples < 3:
+                self.explo_plan.get_random_target()
+            else:
+                self.explo_plan.add_montecarlo_goal(self.grid.models[0].variance)
                 
         rwo=self.explo_plan.get_next_target()
         return rwo
@@ -245,7 +263,9 @@ class PoissonExploration(KrigingVisualiser):
         
         if self.exploring:
             if self.explo_state == 'None' or self.explo_state == 'Ready':
+                self.chron_pause=True
                 rwo=self.get_next_goal()
+                self.chron_pause=False
                 if rwo:
                     self.navigate_to(rwo.coord)
                     if self.draw_traj:
@@ -275,7 +295,8 @@ class PoissonExploration(KrigingVisualiser):
                         self.grid.krieg_all_mmodels()
                     self.save_data()
                 else:
-                    self.explo_state = 'Ready'
+                    self.save_data(with_gt=False)
+#                    self.explo_state = 'Ready'
                 
             
     def get_errors(self):
@@ -296,25 +317,28 @@ class PoissonExploration(KrigingVisualiser):
         return d
 
 
-    def save_data(self):
-        resp = self.get_errors()
+    def save_data(self, with_gt=True):
         elt = self.get_exploration_time()
 #        self.draw_mode="variance"
-        self.add_canvases()
 
-        self.draw_mode="kriging"
-        self.draw_krigged(0, alpha=200)
-        self.redraw()
-        fn='./'+self.exp_name+'/'+self.exp_name+'-'+'kriged-'+str(self.nsamples)+'.png'
-        rospy.sleep(0.1)
-        cv2.imwrite(fn,self.show_image)
+        self.chron_pause=True
 
-        self.draw_mode="variance"
-        self.draw_variance(0, alpha=200)
-        self.redraw()
-        fn='./'+self.exp_name+'/'+self.exp_name+'-'+'variance-'+str(self.nsamples)+'.png'
-        rospy.sleep(0.1)
-        cv2.imwrite(fn,self.show_image)
+        if with_gt:
+            self.add_canvases()
+            resp = self.get_errors()
+            self.draw_mode="kriging"
+            self.draw_krigged(0, alpha=200)
+            self.redraw()
+            fn='./'+self.exp_name+'/'+self.exp_name+'-'+'kriged-'+str(self.nsamples)+'.png'
+            rospy.sleep(0.1)
+            cv2.imwrite(fn,self.show_image)
+    
+            self.draw_mode="variance"
+            self.draw_variance(0, alpha=200)
+            self.redraw()
+            fn='./'+self.exp_name+'/'+self.exp_name+'-'+'variance-'+str(self.nsamples)+'.png'
+            rospy.sleep(0.1)
+            cv2.imwrite(fn,self.show_image)
         
 
         d={}
@@ -326,18 +350,20 @@ class PoissonExploration(KrigingVisualiser):
         d['coord']['lat']=self.last_coord.lat
         d['coord']['lon']=self.last_coord.lon
         d['dist']=float(self.explodist)
-        d['results']={}
-        d['results']['groundtruth']=resp
-        d['results']['var']={}
-        d['results']['var']['mean']= float(self.grid.models[0].avg_var)
-        d['results']['var']['max']= float(self.grid.models[0].max_var)
-        d['results']['var']['min']= float(self.grid.models[0].min_var)
+        if with_gt:
+            d['results']={}
+            d['results']['groundtruth']=resp
+            d['results']['var']={}
+            d['results']['var']['mean']= float(self.grid.models[0].avg_var)
+            d['results']['var']['max']= float(self.grid.models[0].max_var)
+            d['results']['var']['min']= float(self.grid.models[0].min_var)
 
         self.explo_data.append(d)
         
 
         if elt < self.mission_time_limit:
             self.explo_state = 'Ready'
+            self.chron_pause=False
         else:
             print "Time Limit Reached"
             self.explo_state='Finished'
@@ -402,12 +428,15 @@ class PoissonExploration(KrigingVisualiser):
                 break
         return wp
 
+
     def get_exploration_time(self):
-        if self.exploring:
-            elapsed_time= np.ceil((time.time()-self.start_time)*self.time_scale)
-            return float(elapsed_time)
-        else:
-            return 0
+        elt = (self.sim_time/10.0)*self.time_scale
+        return elt
+#        if self.exploring:
+#            elapsed_time= np.ceil((time.time()-self.start_time)*self.time_scale)
+#            return float(elapsed_time)
+#        else:
+#            return 0
             
             
     def gps_callback(self, data):
@@ -433,15 +462,16 @@ class PoissonExploration(KrigingVisualiser):
         rate = self.current_counts/self.number_of_messages
 
 
-        current_time=(time.time()-self.start_reading_time)
-        print current_time, self.number_of_messages, self.current_counts, rate, sigma
+        current_time=self.get_exploration_time() #(time.time()-self.start_reading_time)
+        crt = (time.time()-self.start_reading_time) *self.time_scale
+        print current_time, crt, self.number_of_messages, self.current_counts, rate, sigma
         if self.sampling_regime == 'adaptive':
             if sigma < self.maximum_dev:
-                self.reading_time=current_time
+                self.reading_time=crt
                 self.finalise_reading(data, rate)
         else:
-            if (current_time*self.time_scale) >= self.max_reading_time:
-                self.reading_time=current_time
+            if (crt) >= self.max_reading_time:
+                self.reading_time=crt
                 self.finalise_reading(data, rate)
     
     

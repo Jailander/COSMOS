@@ -69,12 +69,12 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.image = self.satellite.base_image.copy()
         self.map_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 #
-        self.get_corners(-15.5)
+        self.get_corners(-15.5, size=75.0)
         cell_size=5.0
         self.grid = DataGrid(None, cell_size, limit_list=self.corners)        
         
         
-        self.drawing_grid(self.centre, -15.5)
+        self.drawing_grid(self.centre, -15.5, size=75.0)
         self.generate_files()
         while(self.running):
             cv2.imshow('SimpleDataVisualiser', self.image)
@@ -85,11 +85,11 @@ class SimpleDataVisualiser(KrigingVisualiser):
         cv2.destroyAllWindows()       
         sys.exit(0)
 
-    def get_corners(self, degang):
+    def get_corners(self, degang, size=30.0):
         self.corners=[]
         angie=math.pi/4
         ang=math.radians(degang)
-        radi=30.0/math.cos(angie)
+        radi=size/math.cos(angie)
         
         dx=-radi*math.cos(ang+angie)
         dy=-radi*math.sin(ang+angie)
@@ -116,7 +116,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.corners.append(x3)        
 
 
-    def drawing_grid(self, centre, degang):
+    def drawing_grid(self, centre, degang, size=75.0):
         self.map_canvas.draw_coordinate(self.centre,'black',size=5, thickness=1, alpha=255)
 
         print "Draw Grid"
@@ -125,9 +125,11 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
         ang=math.radians(degang)
         cwp=[]
-        for i in range(0, 12):
-            dx=(-(i-5.5)*5.0)*math.cos(ang)
-            dy=(-(i-5.5)*5.0)*math.sin(ang)
+        
+        step = int(2 * (size/5.0))
+        for i in range(0, step):
+            dx=(-(i-((step/2.0)-0.5))*5.0)*math.cos(ang)
+            dy=(-(i-((step/2.0)-0.5))*5.0)*math.sin(ang)
             x0=self.centre._get_rel_point(dy,dx)            
             cwp.append(x0)
         
@@ -135,18 +137,18 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.dry_data_points=[]
         self.wet_data_points=[]
         for i in cwp:
-            for j in range(0, 12):
-                dx=(-(j-5.5)*5.0)*math.cos(ang)
-                dy=(-(j-5.5)*5.0)*math.sin(ang)
+            for j in range(0, step):
+                dx=(-(j-((step/2.0)-0.5))*5.0)*math.cos(ang)
+                dy=(-(j-((step/2.0)-0.5))*5.0)*math.sin(ang)
                 x0=i._get_rel_point(dy,dx)
-                if (j-5.5) < 0:
+                if (j-((step/2.0)-0.5)) < 0:
                     self.dry_data_points.append(x0)
                 else:
                     self.wet_data_points.append(x0)
         
-        self.map_canvas.draw_list_of_coords(self.dry_data_points, 'red', size=6, thickness=2)
-        self.map_canvas.draw_list_of_coords(self.wet_data_points, 'blue', size=6, thickness=2)
-        self.map_canvas.draw_list_of_coords(self.corners, 'black', size=6, thickness=2)
+        self.map_canvas.draw_list_of_coords(self.dry_data_points, 'red', size=6, thickness=2, connect=False)
+        self.map_canvas.draw_list_of_coords(self.wet_data_points, 'blue', size=6, thickness=2, connect=False)
+        self.map_canvas.draw_polygon(self.corners, 'black', thickness=2)
        
         self.redraw()
 
@@ -155,7 +157,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
 
     def generate_files(self):
-        with open('airfield.coords', 'w') as f:
+        with open('airfield-large.coords', 'w') as f:
             for i in self.corners:
                 line = str(i.lat) +', '+ str(i.lon) + '\n'
                 f.write(line)
@@ -163,14 +165,14 @@ class SimpleDataVisualiser(KrigingVisualiser):
         
         fd={}
         fd['field']={}
-        fd['field']['name']='airfield'
-        fd['field']['zoom']=19
+        fd['field']['name']='airfield-large'
+        fd['field']['zoom']=18
         fd['field']['lat']=self.centre.lat
         fd['field']['lon']=self.centre.lon
-        fd['field']['limits_file']='airfield.coords'
+        fd['field']['limits_file']='airfield-large.coords'
         
         fdstr=yaml.safe_dump(fd, default_flow_style=False)
-        with open('airfield.field', 'w') as f:
+        with open('airfield-large.field', 'w') as f:
             f.write(fdstr)
             f.close()
         
@@ -198,7 +200,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
             gd['data'].append(d)
 
         gdstr=yaml.safe_dump(gd, default_flow_style=False)
-        with open('airfield-sim.data', 'w') as f:
+        with open('airfield-large-sim.data', 'w') as f:
             f.write(gdstr)
             f.close()
             
@@ -221,5 +223,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
 #    SimpleDataVisualiser(args.field_file, 640, args.cell_size)
-    SimpleDataVisualiser(53.138604, 0.004182, 19, 640, args.cell_size)
+#    SimpleDataVisualiser(53.138604, 0.004182, 19, 640, args.cell_size)
+    SimpleDataVisualiser(53.139004, 0.003993, 18, 640, args.cell_size)
+
+
 
