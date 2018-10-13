@@ -226,6 +226,7 @@ class PoissonExploration(KrigingVisualiser):
             vals = np.reshape(self.grid.models[0].output, -1)
             resp1 = compare_serv('kriging', 0, shapeo[0], shapeo[1], vals.tolist())
             print resp1
+            print self.grid.area.area_size
         elif k == ord('o'):
             self.grid.models[0].do_poisson_krigging()
 

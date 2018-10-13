@@ -183,7 +183,7 @@ class KriggingData(object):
         
         #print measure_var
         #print measure_var
-        self.variance = np.abs(base_var) + np.abs(measure_var)
+        self.variance = 2*np.abs(base_var)  + np.abs(measure_var)
 
         for i in self.orig_data:
             self.variance[i.y][i.x]= abs(self.variance[i.y][i.x])
