@@ -411,7 +411,7 @@ class ExplorationPlan(object):
                    
         
         print "Greedy: " + str(gdist) + " Random: " + str(rdist) + " Optimised: " + str(dist) + " Tom: " + str (tdist)
-        #print self.route
+
 
         
     

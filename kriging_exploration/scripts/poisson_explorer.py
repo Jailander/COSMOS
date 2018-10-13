@@ -146,7 +146,10 @@ class PoissonExploration(KrigingVisualiser):
                 self.running = False
 #            rospy.sleep(0.05)
 
-        timerout.shutdown()
+        info_str='stop_reading'
+        self.req_data_pub.publish(info_str)
+        if timeout >= 0:
+            timerout.shutdown()
         drawtim.shutdown()
         contim.shutdown()
         chron_tim.shutdown()
@@ -276,6 +279,16 @@ class PoissonExploration(KrigingVisualiser):
                 self.explo_plan.get_random_target()
             else:
                 self.explo_plan.add_montecarlo_goal(self.grid.models[0].variance)
+        elif self.strategy == 'as':
+            wp = self.get_wp_from_coord(self.gps_coord)
+#            print "**++++++***+++++**"            
+            #print self.gps_coord
+#            print wp
+            if self.nsamples < 3:
+                self.explo_plan.plan_as_goals(None, self.mission_time_limit-self.get_exploration_time(), wp)
+            else:
+                self.explo_plan.plan_as_goals(self.grid.models[0].variance, self.mission_time_limit-self.get_exploration_time(), wp)
+
                 
         rwo=self.explo_plan.get_next_target()
         return rwo
