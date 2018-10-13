@@ -75,8 +75,8 @@ class PoissonExploration(KrigingVisualiser):
     sampling_regime='adaptive'
     max_reading_time=600 #only for fixed sampling regime    
     
-    def __init__(self, field, cell_size, exp_def='none'):
-
+    def __init__(self, field, cell_size, exp_def='none', automatic=False, timeout=-1):
+        self.automatic=automatic
         signal.signal(signal.SIGINT, self.signal_handler)
 
         print "Creating visualiser object"
@@ -127,6 +127,12 @@ class PoissonExploration(KrigingVisualiser):
         drawtim = rospy.Timer(rospy.Duration(0.03), self.draw_timer_callback)
         contim = rospy.Timer(rospy.Duration(0.1), self.control_timer_callback)
         chron_tim = rospy.Timer(rospy.Duration(0.1), self.chrono_cb)
+        
+        if self.automatic:
+            self.auto_tim = rospy.Timer(rospy.Duration(1), self.autostart_cb, oneshot=True)
+
+        if timeout >= 0:
+            timerout = rospy.Timer(rospy.Duration(timeout), self.timeout_cb, oneshot=True)
 #        self.grid.krieg_all_mmodels()
 #        self.draw_krigged(0, alpha=200)
 
@@ -140,6 +146,7 @@ class PoissonExploration(KrigingVisualiser):
                 self.running = False
 #            rospy.sleep(0.05)
 
+        timerout.shutdown()
         drawtim.shutdown()
         contim.shutdown()
         chron_tim.shutdown()
@@ -230,6 +237,20 @@ class PoissonExploration(KrigingVisualiser):
         elif k == ord('o'):
             self.grid.models[0].do_poisson_krigging()
 
+
+    def timeout_cb(self, event):
+        self.close_explorer(success=False)
+
+
+    def autostart_cb(self, event):
+        self.reset_chrono()
+        self.chron_pause=False
+        self.exploring = True
+        self.explodist=0
+        dirpath='./'+self.exp_name
+        os.makedirs(dirpath)
+        self.draw_traj=True
+        self.auto_tim.shutdown()
 
     def draw_timer_callback(self, event):
         self.refresh()
@@ -378,7 +399,18 @@ class PoissonExploration(KrigingVisualiser):
             with open(fnstr, 'w') as f:
                 f.write(fdstr)
                 f.close()
+            if self.automatic:
+                self.close_explorer(success=True)
 
+
+    def close_explorer(self, success=False):
+        info_str='stop_reading'
+        self.req_data_pub.publish(info_str)
+        rsstr=self.exp_name+' was successful? '+str(success)+'\n'
+        with open('automated_results.txt', 'a') as f:
+            f.write(rsstr)
+            f.close()        
+        self.running=False        
 
     def refresh(self):
         self.show_image = kriging_exploration.canvas.overlay_image_alpha(self.image,self.gps_canvas.image)
@@ -521,8 +553,10 @@ if __name__ == '__main__':
                         help="cell size in meters")
     parser.add_argument("--exp_def_file", type=str, default="none",
                         help="cell size in meters")
+    parser.add_argument("--automatic", type=bool, default=False, help="start and stop exploration automatically")
+    parser.add_argument("--timeout", type=int, default=-1, help="kill node after timeout (secs)")
     args = parser.parse_args()
     
     field=load_field_defs(args.field_def_file)
     rospy.init_node('poisson_explorer')
-    PoissonExploration(field, args.cell_size, exp_def=args.exp_def_file)
+    PoissonExploration(field, args.cell_size, exp_def=args.exp_def_file, automatic=args.automatic, timeout=args.timeout)
