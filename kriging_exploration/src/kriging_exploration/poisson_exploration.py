@@ -277,7 +277,7 @@ class PoissonExplorationPlan(object):
         return rwo
 
 
-    def plan_as_goals(self, model_variance, remaining_time, initial_waypoint, min_scans_per_hour=6):
+    def plan_as_goals(self, model_variance, remaining_time, initial_waypoint, min_scans_per_hour=5):
         print "AS planning ..."
         print "Remaining Time: "+str(remaining_time)
         min_targets_in_queue=int((remaining_time*min_scans_per_hour)/(3600))+1
@@ -286,6 +286,7 @@ class PoissonExplorationPlan(object):
         st = time.time()
         
         if model_variance != None:
+            self.remove_low_var_targets(model_variance)
             while len(self.targets) < min_targets_in_queue:
                 mc_goal=self.add_mc_to_as(model_variance)
                 self.targets.append(mc_goal)
@@ -302,6 +303,25 @@ class PoissonExplorationPlan(object):
         print "search time: ", at
 
         #self.route.append(mctargets[inds])        
+
+    def remove_low_var_targets(self, model_variance):
+        var_average= np.mean(model_variance)
+        var_std= np.std(model_variance)
+        var_cut=var_average-(0.5*var_std)
+        #removed=0
+        to_pop=[]
+        for i in range(len(self.targets)):
+            print i, model_variance.shape, len(self.targets), self.targets[i].ind[0],self.targets[i].ind[1]
+            if model_variance[self.targets[i].ind[0]][self.targets[i].ind[1]]<var_cut:
+                to_pop.append(i)
+                #removed=removed+1
+
+        to_pop.reverse()
+        print "removing ",len(to_pop), "goals from original ",len(self.targets), "nodes"
+        for i in to_pop:
+            self.targets.pop(i)
+            
+            
 
     def get_next_target(self):
         return self.targets[0]
