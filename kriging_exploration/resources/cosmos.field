@@ -1,0 +1,7 @@
+field:
+  name: 'cosmos'
+  lat: 53.261718
+  lon: -0.525233
+  zoom: 17
+  limits_file: 'cosmos.coords' 
+
