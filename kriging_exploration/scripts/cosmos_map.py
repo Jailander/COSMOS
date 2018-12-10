@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 
 from sensor_msgs.msg import NavSatFix
 
+from std_msgs.msg import String
+
 from kriging_exploration.map_coords import MapCoords
 
 from kriging_exploration.visualiser import KrigingVisualiser
@@ -74,6 +76,11 @@ class SimpleDataVisualiser(KrigingVisualiser):
         'none': ''
     }
 
+    _cosmos_wp=['WayPoint126','WayPoint129','WayPoint132','WayPoint135','WayPoint138',
+                'WayPoint092','WayPoint095','WayPoint098','WayPoint101','WayPoint104',
+                'WayPoint060','WayPoint063','WayPoint066','WayPoint069','WayPoint072',
+                'WayPoint030','WayPoint033','WayPoint036','WayPoint039','WayPoint042',
+                'WayPoint158','WayPoint161','WayPoint164']
 
     def __init__(self, field_file, size, cell_size):
         self.running = True
@@ -106,12 +113,14 @@ class SimpleDataVisualiser(KrigingVisualiser):
                 
         rospy.loginfo("Subscribing to GPS Data")
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        self.pub = rospy.Publisher("/current_node", String, latch=True)
     
         print "Draw Grid"
         print "Grid Shape: ", self.grid.shape
         self.map_canvas.draw_grid(self.grid.cells, self.grid.cell_size, (64,64,64,64), thickness=1)
         self.map_canvas.draw_polygon(self.grid.limits, 'yellow', thickness=2)
-        self.draw_topo_map(self.topo_map.waypoints, colour='red', size=3, thickness=2)
+        self.draw_nodes()
+        
         self.redraw()
         
         print self.topo_map.waypoints[-1]        
@@ -128,7 +137,19 @@ class SimpleDataVisualiser(KrigingVisualiser):
         cv2.destroyAllWindows()       
         sys.exit(0)
 
-       
+
+    def draw_nodes(self):
+        normal_wp = self.topo_map.waypoints[:]
+        cosmos_wp = []
+        cosmos_inds =[]
+        for i in range(len(normal_wp)):
+            if normal_wp[i].name in self._cosmos_wp:
+                cosmos_inds.append(i)
+        cosmos_inds.reverse()
+        for i in cosmos_inds:
+            cosmos_wp.append(normal_wp.pop(i))
+
+        self.draw_topo_map(normal_wp, alt_waypoints=cosmos_wp, colour='red', alt_colour='blue', size=3, thickness=2)
 
     def get_closest_node(self, gps_coord):
         dist, node = self.check_topo_map_dist(gps_coord)
@@ -168,6 +189,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
             self.gps_canvas.clear_image()
             self.gps_canvas.draw_coordinate(self.closest_node.coord,'red',size=6, thickness=2, alpha=255)
             self.gps_canvas.draw_coordinate(gps_coord,'white',size=2, thickness=2, alpha=255)
+            self.pub.publish(self.closest_node.name)
 
 
 
