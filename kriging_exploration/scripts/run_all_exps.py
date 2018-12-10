@@ -18,6 +18,6 @@ if __name__ == '__main__':
     cell_size = 1
     for i in filenames:
         cmdstr = ('rosrun kriging_exploration poisson_explorer.py --field_def_file %s --cell_size %d --exp_def_file %s --automatic true --timeout %d' 
-                    %(field_def_file, cell_size, i, 600))
+                    %(field_def_file, cell_size, i, 900))
         os.system(cmdstr)
         print i

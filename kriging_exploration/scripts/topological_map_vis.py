@@ -373,14 +373,34 @@ class SimpleDataVisualiser(KrigingVisualiser):
 #        for i in self.ceh_map:  
 #            self.map_canvas.draw_coordinate(i,'cyan',size=2, thickness=1, alpha=255)#, shape='rect')
 
-        for i in self.final_map:
-            self.map_canvas.draw_coordinate(i.coord,'white',size=5, thickness=1, alpha=255)
+
+
+#        line=[]
+#        
+#        ang=math.radians(degang)
+#        dy=-22.5*math.cos(ang)
+#        dx=-22.5*math.sin(ang)
+#        irr_centre=centre._get_rel_point(dy,dx)
+#
+#
+#        ang2=math.radians(degang+90.0)
+#        dy=220*math.cos(ang2)
+#        dx=220*math.sin(ang2)
+#        new_coord=irr_centre._get_rel_point(dy,dx)
+#        line.append(new_coord)
+#
+#        dy=-220*math.cos(ang2)
+#        dx=-220*math.sin(ang2)
+#        new_coord2=irr_centre._get_rel_point(dy,dx)
+#        line.append(new_coord2)
+#
+#        self.map_canvas.draw_line(line, 'white')
 
         line=[]
         
         ang=math.radians(degang)
-        dy=-22.5*math.cos(ang)
-        dx=-22.5*math.sin(ang)
+        dy=0*math.cos(ang)
+        dx=0*math.sin(ang)
         irr_centre=centre._get_rel_point(dy,dx)
 
 
@@ -395,30 +415,33 @@ class SimpleDataVisualiser(KrigingVisualiser):
         new_coord2=irr_centre._get_rel_point(dy,dx)
         line.append(new_coord2)
 
-
-        self.map_canvas.draw_line(line, 'magenta')
+        self.map_canvas.draw_line(line, 'white')
         
-        line =[]
-        ang=math.radians(degang)
-        dy=-77.5*math.cos(ang)
-        dx=-77.5*math.sin(ang)
-        irr_centre=centre._get_rel_point(dy,dx)
+        
+#        line =[]
+#        ang=math.radians(degang)
+#        dy=-77.5*math.cos(ang)
+#        dx=-77.5*math.sin(ang)
+#        irr_centre=centre._get_rel_point(dy,dx)
+#
+#
+#        ang2=math.radians(degang+90.0)
+#        dy=220*math.cos(ang2)
+#        dx=220*math.sin(ang2)
+#        new_coord=irr_centre._get_rel_point(dy,dx)
+#        line.append(new_coord)
+#
+#        dy=-220*math.cos(ang2)
+#        dx=-220*math.sin(ang2)
+#        new_coord2=irr_centre._get_rel_point(dy,dx)
+#        line.append(new_coord2)
 
 
-        ang2=math.radians(degang+90.0)
-        dy=220*math.cos(ang2)
-        dx=220*math.sin(ang2)
-        new_coord=irr_centre._get_rel_point(dy,dx)
-        line.append(new_coord)
-
-        dy=-220*math.cos(ang2)
-        dx=-220*math.sin(ang2)
-        new_coord2=irr_centre._get_rel_point(dy,dx)
-        line.append(new_coord2)
-
-
-        self.map_canvas.draw_line(line, 'magenta')
+        self.map_canvas.draw_line(line, 'white')
         print len(self.topo_map)
+
+        for i in self.final_map:
+            self.map_canvas.draw_coordinate(i.coord,'white',size=2, thickness=2, alpha=255)
 
 
         labels=[]

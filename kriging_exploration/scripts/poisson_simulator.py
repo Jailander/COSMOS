@@ -78,6 +78,8 @@ class PoissonSimulation(KrigingVisualiser):
         self.create_grid(cell_size, limits)
         self.draw_grid()
 
+        
+
         self.load_groundtruth_data('airfield-sim.data')
         self.draw_inputs(0, alpha=200)
 
@@ -88,9 +90,11 @@ class PoissonSimulation(KrigingVisualiser):
         drawtim = rospy.Timer(rospy.Duration(0.03), self.draw_timer_callback)
 
         self.grid.krieg_all_mmodels()
-        
+
+        print "Area Size: ", self.grid.area.area_size        
         self.draw_krigged(0, alpha=200)
         self.draw_variance(0, alpha=200)
+
 
 
         self.redraw()

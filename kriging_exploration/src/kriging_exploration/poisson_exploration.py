@@ -163,6 +163,9 @@ class PoissonExplorationPlan(object):
             else:
                 found=True
                 break
+            
+            if maxind >= len(maxes):
+                break
         
         suma = np.sum(varis)
         scores = []
@@ -228,6 +231,9 @@ class PoissonExplorationPlan(object):
                 maxind+=1                
             else:
                 found=True
+                break
+        
+            if maxind >= len(maxes):
                 break
         
         suma = np.sum(varis)

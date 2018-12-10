@@ -58,14 +58,14 @@ class KrigingVisualiser(object):
         self.grid_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
 
-    def draw_topo_map(self, waypoints):
+    def draw_topo_map(self, waypoints, colour='white', size=5, thickness=1):
         self.topo_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         for i in waypoints:
-            self.topo_canvas.draw_coordinate(i.coord,'white',size=5, thickness=1)
+            self.topo_canvas.draw_coordinate(i.coord, colour, size=size, thickness=thickness)
 
 
     def draw_grid(self):
-        self.grid_canvas.draw_grid(self.grid.cells, self.cell_size, (72,72,72,128), thickness=1)
+        #self.grid_canvas.draw_grid(self.grid.cells, self.cell_size, (72,72,72,128), thickness=1)
         self.grid_canvas.draw_polygon(self.grid.limits, (0,0,255,208), thickness=2)
 
 

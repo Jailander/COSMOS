@@ -160,7 +160,7 @@ class ViewerCanvas(object):
         cv2.line(self.image, (int(mx1), int(my1)), (int(mx2), int(my2)), b, thickness=thickness)
     
 
-    def draw_legend(self, vmin, vmax, colmap, x_or=150, y_or=620, bar_height=30, bar_width=340, title="OUTPUTS", units="Kpa"):
+    def draw_legend(self, vmin, vmax, colmap, x_or=150, y_or=620, bar_height=30, bar_width=340, title="OUTPUTS", units=" "):
         font = cv2.FONT_HERSHEY_SIMPLEX
         
         if (vmax-vmin) > 1:
@@ -198,7 +198,7 @@ class ViewerCanvas(object):
         cv2.putText(self.image, str(np.ceil(vmax)) + " " + units, (int(490)-tsz[0][0]-5, int(580)), font, 0.6, b, 2)
         
 #        cv2.putText(self.image, title, (230,175), font, 0.8, (220, 220, 220,255), 2)
-        cv2.putText(self.image, title, (260,560), font, 0.8, (220, 220, 220,255), 2)    
+        cv2.putText(self.image, title, (260,581), font, 0.8, (220, 220, 220,255), 2)    
     
     def put_text(self,text,colour=(230,230,230,255), text_size=0.8, x_or=400, y_or=250):
         font = cv2.FONT_HERSHEY_SIMPLEX
