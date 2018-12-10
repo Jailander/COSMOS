@@ -130,6 +130,27 @@ class SimpleDataVisualiser(KrigingVisualiser):
 
        
 
+    def get_closest_node(self, gps_coord):
+        dist, node = self.check_topo_map_dist(gps_coord)
+        dd=round(dist,2)
+        de=round(node.coord.easting-gps_coord.easting,2)
+        dn=round(node.coord.northing-gps_coord.northing,2)
+        print node.name, dd, 'E: ', de, 'N: ', dn 
+        return node
+
+
+    def check_topo_map_dist(self, coord):
+        mindist=10000
+        closest='none'
+        for i in self.topo_map.waypoints:
+            dist, ori = coord-i.coord
+            if dist < mindist:
+                mindist=dist
+                closest=i
+                if mindist < 0.5:
+                    break
+        
+        return mindist, closest
 
     def click_callback(self, event, x, y, flags, param):
         
