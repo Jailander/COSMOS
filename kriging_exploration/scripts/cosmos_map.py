@@ -29,6 +29,11 @@ from kriging_exploration.canvas import ViewerCanvas
 from kriging_exploration.topological_map import TopoMap
 
 
+def load_data_from_yaml(filename):
+    with open(filename, 'r') as f:
+        a = yaml.load(f)
+        return a
+
 def overlay_image_alpha(img, img_overlay):
     """Overlay img_overlay on top of img at the position specified by
     pos and blend using alpha_mask.
@@ -82,6 +87,27 @@ class SimpleDataVisualiser(KrigingVisualiser):
                 'WayPoint030','WayPoint033','WayPoint036','WayPoint039','WayPoint042',
                 'WayPoint158','WayPoint161','WayPoint164']
 
+#    _done= ['WayPoint099', 'WayPoint059', 'WayPoint029', 'WayPoint098', 'WayPoint014',
+#            'WayPoint132', 'WayPoint063', 'WayPoint058', 'WayPoint038', 'WayPoint090',
+#            'WayPoint000', 'WayPoint041', 'WayPoint009', 'WayPoint104', 'WayPoint012',
+#            'WayPoint013', 'WayPoint033', 'WayPoint071', 'WayPoint139', 'WayPoint124',
+#            'WayPoint006', 'WayPoint174', 'WayPoint003', 'WayPoint030', 'WayPoint095',
+#            'WayPoint065', 'WayPoint089', 'WayPoint175', 'WayPoint011', 'WayPoint061',
+#            'WayPoint072', 'WayPoint068', 'WayPoint036', 'WayPoint105', 'WayPoint060',
+#            'WayPoint094', 'WayPoint176', 'WayPoint001', 'WayPoint034', 'WayPoint032',
+#            'WayPoint010', 'WayPoint127', 'WayPoint043', 'WayPoint136', 'WayPoint155',
+#            'WayPoint039', 'WayPoint096', 'WayPoint135', 'WayPoint069', 'WayPoint123',
+#            'WayPoint042', 'WayPoint002', 'WayPoint062', 'WayPoint093', 'WayPoint138',
+#            'WayPoint074', 'WayPoint133', 'WayPoint037', 'WayPoint007', 'WayPoint131',
+#            'WayPoint134', 'WayPoint040', 'WayPoint073', 'WayPoint100', 'WayPoint102',
+#            'WayPoint175', 'WayPoint092', 'WayPoint126', 'WayPoint008', 'WayPoint004',
+#            'WayPoint031', 'WayPoint070', 'WayPoint064', 'WayPoint106', 'WayPoint137',
+#            'WayPoint035', 'WayPoint128', 'WayPoint005', 'WayPoint097', 'WayPoint028',
+#            'WayPoint125', 'WayPoint166', 'WayPoint103', 'WayPoint066', 'WayPoint101',
+#            'WayPoint091', 'WayPoint130', 'WayPoint067', 'WayPoint129', 'WayPoint140']
+
+    _done=[]
+
     def __init__(self, field_file, size, cell_size):
         self.running = True
         self.topo_map=[]
@@ -113,6 +139,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
                 
         rospy.loginfo("Subscribing to GPS Data")
         rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        
+        rospy.Subscriber("/scanned_node", String, self.done_callback)
         self.pub = rospy.Publisher("/current_node", String, latch=True)
     
         print "Draw Grid"
@@ -120,6 +148,8 @@ class SimpleDataVisualiser(KrigingVisualiser):
         self.map_canvas.draw_grid(self.grid.cells, self.grid.cell_size, (64,64,64,64), thickness=1)
         self.map_canvas.draw_polygon(self.grid.limits, 'yellow', thickness=2)
         self.draw_nodes()
+        self.check_visited()
+
         
         self.redraw()
         
@@ -137,6 +167,23 @@ class SimpleDataVisualiser(KrigingVisualiser):
         cv2.destroyAllWindows()       
         sys.exit(0)
 
+    def done_callback(self, data):
+        print data
+        self._done.append(data.data)
+        self.cross_done()
+
+    def check_visited(self):
+        a = load_data_from_yaml('visited.yaml')
+        self._done=a['done']
+        self.cross_done()        
+
+
+    def cross_done(self):
+        for i in self._done:
+            indx = self.topo_map.waypoint_names.index(i)
+            coord = self.topo_map.waypoints[indx].coord
+            self.topo_canvas.cross_coord(coord,'black',size=3)
+        self.redraw()
 
     def draw_nodes(self):
         normal_wp = self.topo_map.waypoints[:]
