@@ -112,7 +112,7 @@ class SimpleDataVisualiser(KrigingVisualiser):
         
                 
         rospy.loginfo("Subscribing to GPS Data")
-        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/rtk_fix", NavSatFix, self.gps_callback)
         self.pub = rospy.Publisher("/current_node", String, latch=True)
     
         print "Draw Grid"
