@@ -77,10 +77,18 @@ class ViewerCanvas(object):
             cv2.circle(self.image, (int(mx), int(my)), size, b, thickness)
 
 
-    def draw_waypoints(self, waypoints, colour,thickness=2):
+    def draw_waypoints(self, waypoints, colour, size=2, thickness=2):
         for i in waypoints:
             mx0, my0 = self._coord2pix(i.coord)
             cv2.circle(self.image, (int(mx0), int(my0)), 2, colour, thickness=thickness)
+
+    def cross_coord(self, coord, colour, size=2, thickness=2):
+        if isinstance(colour,str):
+           colour = self._get_colour_from_name(colour,128) 
+
+        mx, my = self._coord2pix(coord)
+        cv2.line(self.image,(int(mx)-size, int(my)-size),(int(mx)+size, int(my)+size),colour,thickness)
+        cv2.line(self.image,(int(mx)+size, int(my)-size),(int(mx)-size, int(my)+size),colour,thickness)
 
 
     def draw_plan(self, waypoints, colour, thickness=2, alpha=128):
