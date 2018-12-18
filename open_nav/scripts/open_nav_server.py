@@ -36,7 +36,7 @@ class opennavserver(object):
         self._as = actionlib.SimpleActionServer(self._action_name, open_nav.msg.OpenNavAction, execute_cb = self.executeCallback, auto_start = False)
         self._as.register_preempt_callback(self.preemptCallback)
 
-        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/rtk_fix", NavSatFix, self.gps_callback)
 
         rospy.loginfo(" ...starting")
         self._as.start()

@@ -23,7 +23,7 @@ class SImPos(object):
 
         self.timer= rospy.Timer(rospy.Duration(0.5), self.time_callback)
         rospy.Subscriber("/cmd_vel", Twist, self.callback)
-        self.pub = rospy.Publisher("/navsat_fix", NavSatFix)
+        self.pub = rospy.Publisher("/rtk_fix", NavSatFix)
         self.ang_pub = rospy.Publisher("/septentrio/heading", Float32)
         rospy.Service('/teleport_robot', TeleportRobot, self.teleport_cb)
         

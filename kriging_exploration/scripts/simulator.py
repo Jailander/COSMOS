@@ -71,7 +71,7 @@ class simulator(object):
         
         signal.signal(signal.SIGINT, self.signal_handler)
         self.data_pub = rospy.Publisher('/kriging_data', KrigInfo, latch=False, queue_size=1)
-        rospy.Subscriber("/fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/rtk_fix", NavSatFix, self.gps_callback)
         rospy.Subscriber('/request_scan', std_msgs.msg.String, self.scan_callback)
 
         rospy.Service('/compare_model', CompareModels, self.model_comparison_cb)
@@ -81,8 +81,8 @@ class simulator(object):
         self.satellite = SatelliteImage(lat_deg, lon_deg, zoom, size)
 #        self.grid = DataGrid('football-old.coords', cell_size)
 #        self.grid = DataGrid('greece.coords', cell_size)
-        self.grid = DataGrid('airfield.coords', cell_size)
-#        self.grid = DataGrid('cosmos.coords', cell_size)
+#        self.grid = DataGrid('airfield.coords', cell_size)
+        self.grid = DataGrid('cosmos.coords', cell_size)
 
         #self.load_groundtruth('Iains2.yaml')
         #self.load_groundtruth('bottom_testing.yaml')
@@ -91,8 +91,8 @@ class simulator(object):
 #        self.load_groundtruth('football-corrected.yaml')        
 #        self.load_groundtruth('cosmos-corrected.yaml')        
 #        self.load_groundtruth('greece_gt.yaml')        
-        self.load_groundtruth('airfield-sim.data')
-                
+#        self.load_groundtruth('airfield-sim.data')
+        self.load_groundtruth('cosmos-gt.yaml')
                 
         self.krieg_all_mmodels()
         self.grid.calculate_mean_grid()
@@ -427,7 +427,7 @@ if __name__ == '__main__':
     
 #    simulator(53.267213, -0.533420, 17, 640, args.cell_size)  #Football Field
 #    simulator(39.432305, 22.79269, 17, 640, args.cell_size)    #Greece
-    simulator(53.138604, 0.004182, 19, 640, args.cell_size)    #Greece    
+#    simulator(53.138604, 0.004182, 19, 640, args.cell_size)    #Greece    
 #    simulator(53.261576, -0.526648, 17, 640, args.cell_size)  #Half cosmos field
-#    simulator(53.261685, -0.525158, 17, 640, args.cell_size)  #Full cosmos field
+    simulator(53.261685, -0.525158, 17, 640, args.cell_size)  #Full cosmos field
 

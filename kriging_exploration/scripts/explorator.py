@@ -139,7 +139,7 @@ class Explorator(SimpleKrigingVisualiser):
 
         rospy.loginfo("Subscribing to Krig Info")
         rospy.Subscriber("/kriging_data", KrigInfo, self.data_callback)
-        rospy.Subscriber("/navsat_fix", NavSatFix, self.gps_callback)
+        rospy.Subscriber("/rtk_fix", NavSatFix, self.gps_callback)
         rospy.Subscriber('/penetrometer_scan', std_msgs.msg.String, self.scan_callback)
         self.req_data_pub = rospy.Publisher('/request_scan', std_msgs.msg.String, latch=False, queue_size=1)
 
@@ -172,8 +172,8 @@ class Explorator(SimpleKrigingVisualiser):
         self.n_goals=50   
         
         if explo_type=='area_split' or explo_type=='as_greedy':
-            #self.grid._split_area(7,7)
-            self.grid._split_area(3,3)
+            self.grid._split_area(7,7)
+            #self.grid._split_area(3,3)
             sb=[]
             for i in self.grid.area_splits_coords:
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
@@ -1002,8 +1002,8 @@ if __name__ == '__main__':
     rospy.init_node('kriging_exploration')
     #Explorator(53.261685, -0.527158, 16, 640, args.cell_size)
     
-    Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
+#    Explorator(53.267213, -0.533420, 17, 640, args)  #Football Field
     #Explorator(53.261576, -0.526648, 17, 640, args)  #Half cosmos field
-    #Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
+    Explorator(53.261685, -0.525158, 17, 640, args) #COSMOS Field
 
     
