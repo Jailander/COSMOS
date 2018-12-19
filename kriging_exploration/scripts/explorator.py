@@ -72,6 +72,7 @@ class Explorator(SimpleKrigingVisualiser):
     _w_shape=[( 34 , 0),( 32 , 4 ),( 30 , 8 ),( 28 , 12 ),( 25 , 16 ),( 22 , 25 ),( 20 , 29 ),( 18 , 25 ),( 16 , 19 ),( 15 , 16 ),( 14 , 19 ),( 13 , 22 ),( 12 , 25 ),( 11 , 27 ),( 9 , 27 ),( 7 , 22 ),( 3 , 11 )]
     def __init__(self, lat_deg, lon_deg, zoom, size, args):
         self.targets = []
+        self.goal_coord=None
         self.results =[]
         self.results2 =[]
         self.result_counter=0
@@ -110,6 +111,7 @@ class Explorator(SimpleKrigingVisualiser):
         self.grid_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.exploration_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
         self.gps_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
+        #self.goal_canvas = ViewerCanvas(self.base_image.shape, self.satellite.centre, self.satellite.res)
 
         self.limits_canvas.draw_polygon(self.grid.limits, (0,0,255,128), thickness=1)
         self.grid_canvas.draw_grid(self.grid.cells, args.cell_size, (128,128,128,2), thickness=1)
@@ -172,8 +174,8 @@ class Explorator(SimpleKrigingVisualiser):
         self.n_goals=50   
         
         if explo_type=='area_split' or explo_type=='as_greedy':
-            self.grid._split_area(7,7)
-            #self.grid._split_area(3,3)
+            #self.grid._split_area(7,7)
+            self.grid._split_area(3,3)
             sb=[]
             for i in self.grid.area_splits_coords:
                 (y, x) = self.grid.get_cell_inds_from_coords(i)
@@ -218,7 +220,7 @@ class Explorator(SimpleKrigingVisualiser):
                     targ.goal.coords.header.stamp=rospy.Time.now()
                     targ.goal.coords.latitude=gg.coord.lat
                     targ.goal.coords.longitude=gg.coord.lon
-        
+                    self.goal_coord=gg.coord
                     print "Going TO: ", gg.name
                     self.exploring=1
                     self.navigating=True
@@ -226,6 +228,7 @@ class Explorator(SimpleKrigingVisualiser):
                 else:
                     print "Done Exploring"
                     self.exploring = 0
+                    self.goal_coord=None
 #        else:
 #            if self.exploring:
 #                print "waiting for new goal"
@@ -239,6 +242,8 @@ class Explorator(SimpleKrigingVisualiser):
                 dist = gps_coord - self.last_coord
                 self.explodist+= dist[0]
             self.last_coord=gps_coord
+        if self.goal_coord:
+            self.gps_canvas.draw_coordinate(self.goal_coord,'red',size=5, thickness=2, alpha=255)
 
 
 
@@ -820,7 +825,7 @@ class Explorator(SimpleKrigingVisualiser):
                 targ.goal.coords.header.stamp=rospy.Time.now()
                 targ.goal.coords.latitude=gg.coord.lat
                 targ.goal.coords.longitude=gg.coord.lon
-    
+                self.goal_coord=gg.coord
                 print "Going TO: ", gg
                 self.exploring=1
                 self.navigating=True
@@ -993,7 +998,9 @@ if __name__ == '__main__':
                         help="Percentage of cells to be explored on the initial plan")
     parser.add_argument("--initial_waypoint", type=str, default='WayPoint498',
                         help="Percentage of cells to be explored on the initial plan")
-    parser.add_argument("--area_coverage_type", type=str, default='area_split',
+#    parser.add_argument("--area_coverage_type", type=str, default='area_split',
+#                        help="Type of area coverage, random or area_split")
+    parser.add_argument("--area_coverage_type", type=str, default='as_greedy',
                         help="Type of area coverage, random or area_split")
     parser.add_argument("--experiment_name", type=str, default='exp1',
                         help="Experiment ID")
