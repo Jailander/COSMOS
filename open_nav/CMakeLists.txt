@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   actionlib
   actionlib_msgs
-  base_drive_chain
+#  base_drive_chain
   std_msgs
   sensor_msgs
 )
