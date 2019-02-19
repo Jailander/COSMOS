@@ -52,6 +52,7 @@ class KrigingVisualiser(object):
         self.refresh_image()
 
 
+
     def create_grid(self, cell_size, limit_list):
         self.grid = DataGrid(None, cell_size, limit_list=limit_list)
         self.cell_size=cell_size

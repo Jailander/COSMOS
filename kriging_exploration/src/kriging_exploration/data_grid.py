@@ -231,6 +231,7 @@ class DataGrid(object):
         self.valmax = np.ceil(np.max([x.lims[1] for x in self.models]))
         return self.valmin, self.valmax
 
+
     
     def create_grid(self, cell_size):
         self.cell_size = cell_size
@@ -245,6 +246,8 @@ class DataGrid(object):
             self.cells.append(ab)
         np_cells = np.asarray(self.cells)
         self.shape= np_cells.shape
+
+
 
     def _get_grid_corners(self):
         self.grid=[]
