@@ -221,8 +221,8 @@ class KriggingData(object):
 #            ss=np.full(self.shape,0,dtype=np.float64)
             z=np.full(self.shape,np.average(datablah[:, 3]),dtype=np.float64)
             
-            for i in datablah:
-                z[i[0]][i[1]]=i[3]
+#            for i in datablah:
+#                z[i[0]][i[1]]=i[3]
             self.kriged=False
 
         del OK2

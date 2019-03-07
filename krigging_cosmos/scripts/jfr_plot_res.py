@@ -36,7 +36,8 @@ def plot_distance(models):
         plt.plot(i['data']['dist'][0], i['data']['dist'][1], label=i['description'], color=cols[colcount])    
 
         plt.fill_between(i['data']['dist'][0],np.asarray(i['data']['dist'][1])-np.asarray(i['data']['dist'][2]), 
-                         np.asarray(i['data']['dist'][1])+np.asarray(i['data']['dist'][2]), alpha=0.1, color=cols[colcount])
+                         np.asarray(i['data']['dist'][1])+np.asarray(i['data']['dist'][2]),
+                         alpha=0.1, color=cols[colcount], interpolate=True, linewidth=2.0, linestyle = '-')
         colcount+=1
         if colcount >= len(cols):
             colcount=0
@@ -48,7 +49,7 @@ def plot_distance(models):
     plt.title("Distance")
 
     fontP = FontProperties()
-    fontP.set_size('small')
+    fontP.set_size('large')
     plt.legend(loc='upper left', ncol=1, prop=fontP)
     #plt.legend(ncol=1, prop=fontP)
     
@@ -64,7 +65,8 @@ def plot_mse(models):
     for i in models:
         plt.plot(i['data']['mse'][0], i['data']['mse'][1], label=i['description'], color=cols[colcount]) 
         plt.fill_between(i['data']['mse'][0],np.asarray(i['data']['mse'][1])-np.asarray(i['data']['mse'][2]), 
-                         np.asarray(i['data']['mse'][1])+np.asarray(i['data']['mse'][2]), alpha=0.1, color=cols[colcount])
+                         np.asarray(i['data']['mse'][1])+np.asarray(i['data']['mse'][2]),
+                         alpha=0.1, color=cols[colcount], interpolate=True, linewidth=2.0, linestyle = '-')
         colcount+=1
         if colcount >= len(cols):
             colcount=0
@@ -75,7 +77,7 @@ def plot_mse(models):
     plt.title("mse")
 
     fontP = FontProperties()
-    fontP.set_size('small')
+    fontP.set_size('large')
     plt.legend(loc="upper right",ncol=1, prop=fontP)
     
     plt.savefig("fix_asi_mse.pdf")
@@ -88,8 +90,11 @@ def plot_var(models):
     colcount=0
     for i in models:
         plt.plot(i['data']['var'][0], i['data']['var'][1], label=i['description'], color=cols[colcount])
+#        plt.fill_between(i['data']['var'][0],np.asarray(i['data']['var'][1])-np.asarray(i['data']['var'][2]), 
+#                         np.asarray(i['data']['var'][1])+np.asarray(i['data']['var'][2]), alpha=0.05, color=cols[colcount])
         plt.fill_between(i['data']['var'][0],np.asarray(i['data']['var'][1])-np.asarray(i['data']['var'][2]), 
-                         np.asarray(i['data']['var'][1])+np.asarray(i['data']['var'][2]), alpha=0.1, color=cols[colcount])
+                         np.asarray(i['data']['var'][1])+np.asarray(i['data']['var'][2]), 
+                         alpha=0.1, color=cols[colcount], interpolate=True, linewidth=2.0, linestyle = '-')
         colcount+=1
         if colcount >= len(cols):
             colcount=0
@@ -100,7 +105,7 @@ def plot_var(models):
     plt.title("Kriging Variance")
 
     fontP = FontProperties()
-    fontP.set_size('small')
+    fontP.set_size('large')
     plt.legend(loc="upper right", ncol=1, prop=fontP)
     
     plt.savefig("fix_asi_var.pdf")
@@ -115,8 +120,9 @@ if __name__ == '__main__':
     
     for fil in glob.glob("*.res"):
         print(fil)
+        desc=fil.rstrip('.res')
         #aa = load_results(fil, description=fil)
-        aa = load_results(fil, description=fil)
+        aa = load_results(fil, description=desc)
         #print aa['data']['var']
         models.append(aa)
     

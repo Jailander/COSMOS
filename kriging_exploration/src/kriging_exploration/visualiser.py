@@ -65,7 +65,7 @@ class KrigingVisualiser(object):
 
 
     def draw_grid(self):
-        self.grid_canvas.draw_grid(self.grid.cells, self.cell_size, (72,72,72,128), thickness=1)
+        #self.grid_canvas.draw_grid(self.grid.cells, self.cell_size, (72,72,72,128), thickness=1)
         self.grid_canvas.draw_polygon(self.grid.limits, (0,0,255,208), thickness=2)
 
 
@@ -125,7 +125,7 @@ class KrigingVisualiser(object):
         
         for i in self.grid.models[nm].orig_data:
             cell = self.grid.cells[i.y][i.x]
-            a= colmap.to_rgba(int(i.value))                
+            a= colmap.to_rgba(float(i.value))                
             b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*alpha))
             self.model_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
             self.model_canvas[nm].put_text(self.grid.models[nm].name, colour=(255,255,255,255), x_or=220, y_or=20)
@@ -154,7 +154,7 @@ class KrigingVisualiser(object):
         for i in range(self.grid.models[nm].shape[0]):
             for j in range(self.grid.models[nm].shape[1]):
                 cell = self.grid.cells[i][j]
-                a= colmap.to_rgba(int(self.grid.models[nm].output[i][j]))
+                a= colmap.to_rgba(float(self.grid.models[nm].output[i][j]))
                 b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*alpha))    
                 self.kriging_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
         
@@ -182,7 +182,7 @@ class KrigingVisualiser(object):
         for i in range(self.grid.models[nm].shape[0]):
             for j in range(self.grid.models[nm].shape[1]):
                 cell = self.grid.cells[i][j]
-                a= colmap.to_rgba(int(self.grid.models[nm].variance[i][j]))
+                a= colmap.to_rgba(float(self.grid.models[nm].variance[i][j]))
                 b= (int(a[2]*255), int(a[1]*255), int(a[0]*255), int(a[3]*alpha))
                 self.sigma_canvas[nm].draw_cell(cell, self.grid.cell_size, b, thickness=-1)
 
