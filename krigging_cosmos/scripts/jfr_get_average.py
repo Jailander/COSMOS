@@ -22,6 +22,8 @@ def load_data_from_yaml(filename):
 def load_results(filename, description=''):
     b={}
     a = load_data_from_yaml(filename)
+    mdn=filename.rstrip('.yaml').split('-')
+    b['name']=mdn[-1]
     b['description']=description
     b['dist']=[[],[]]
     b['mse']=[[],[]]
@@ -55,8 +57,10 @@ def average_distances(models, field='dist'):
     print(xvals)
     
     mods=[]
+    mnm=[]
     for i in models:
         yint = np.interp(xvals, i[field][0], i[field][1])
+        mnm.append(i['name'])
         mods.append(yint)
 
     avs=[]
@@ -70,6 +74,22 @@ def average_distances(models, field='dist'):
     print(avs)
     print(astd)
     print(len(avs), len(xvals))
+
+
+#    nlable=0
+    for i in range(len(mods)):
+        plt.plot(xvals, mods[i], label=mnm[i])
+#        nlable+=1
+    
+    
+    plt.title(field)
+    fontP = FontProperties()
+    fontP.set_size('small')
+    plt.legend(loc="upper left",ncol=2, prop=fontP)
+    
+    plt.show()
+
+
     return [xvals,avs,astd]
 
 
@@ -94,7 +114,7 @@ if __name__ == '__main__':
     a['var']=average_distances(models, field='var')
 
 
-    plt.plot(a['var'][0], a['var'][1])
+    plt.plot(a['mse'][0], a['mse'][1])
     plt.show()
 #    print a
     
